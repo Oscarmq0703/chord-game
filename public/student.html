@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>和弦练习</title>
+<script src="https://unpkg.com/tone"></script>
+<style>
+body{font-family:sans-serif;text-align:center}
+.piano{position:relative;width:840px;height:200px;margin:auto}
+.white{width:60px;height:200px;background:white;border:1px solid #333;float:left}
+.black{width:40px;height:120px;background:black;position:absolute;top:0}
+.active{background:orange!important}
+</style>
+</head>
+<body>
+<h2 id="title"></h2>
+<div class="piano" id="piano"></div>
+<button onclick="submit()">提交</button>
+<h3 id="feedback"></h3>
+<script src="piano.js"></script>
+<script src="student.js"></script>
+</body>
+</html>

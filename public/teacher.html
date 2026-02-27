@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<body>
+<h2>教师控制台</h2>
+<button onclick="createRoom()">创建课堂</button>
+<p id="room"></p>
+<script>
+function createRoom(){
+fetch("/create-room")
+.then(r=>r.json())
+.then(d=>{
+document.getElementById("room").innerHTML=
+"课堂链接: "+location.origin+"/student.html?"+d.roomId;
+});
+}
+</script>
+</body>
+</html>
