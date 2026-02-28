@@ -1,34 +1,32 @@
-const notes = [
-"C","C#","D","D#","E","F","F#","G","G#","A","A#","B",
-"C","C#","D","D#","E","F","F#","G","G#","A","A#","B"
-];
+// piano.js — Classroom Pro v2
 
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+let sampler
+let audioReady = false
 
-function playFreq(freq) {
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  osc.type = "sine";
-  osc.frequency.value = freq;
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-  osc.start();
-  gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 1);
+async function initPiano() {
+  if (audioReady) return
+
+  await Tone.start()
+
+  sampler = new Tone.Sampler({
+    urls: {
+      C4: "C4.mp3",
+      D#4: "Ds4.mp3",
+      F#4: "Fs4.mp3",
+      A4: "A4.mp3",
+    },
+    release: 1,
+    baseUrl: "https://tonejs.github.io/audio/salamander/",
+  }).toDestination()
+
+  audioReady = true
+  console.log("🎹 Piano ready")
 }
 
-const freqMap = {
-C:261.63,"C#":277.18,D:293.66,"D#":311.13,E:329.63,
-F:349.23,"F#":369.99,G:392.0,"G#":415.3,A:440.0,"A#":466.16,B:493.88
-};
+function playNote(note) {
+  if (!sampler) return
+  sampler.triggerAttackRelease(note, "8n")
+}
 
-const kb = document.getElementById("keyboard");
-
-notes.forEach(n=>{
-  const key=document.createElement("div");
-  key.className="key"+(n.includes("#")?" black":"");
-  key.onclick=()=>{
-    playFreq(freqMap[n.replace("#","#")]);
-    window.checkAnswer(n.replace("#","b"));
-  };
-  kb.appendChild(key);
-});
+window.initPiano = initPiano
+window.playNote = playNote
