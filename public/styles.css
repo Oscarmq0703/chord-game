@@ -27,10 +27,3 @@
   z-index: 2;
   margin-left: -20px;
 }
-
-@media (orientation: landscape) {
-  .piano {
-    transform: scale(0.9);
-    transform-origin: center;
-  }
-}

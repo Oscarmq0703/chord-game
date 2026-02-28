@@ -1,30 +1,91 @@
-const socket = io();
+// ⭐ Classroom Pro v2 — Student
 
-// 获取房间号
-const params = new URLSearchParams(location.search);
-const roomId = params.get("room") || prompt("输入房间号");
+const socket = new WebSocket(
+  location.origin.replace(/^http/, "ws")
+)
 
-socket.emit("joinRoom", roomId);
+const studentId =
+  "stu_" + Math.random().toString(36).slice(2, 8)
 
-// ===== 题库 =====
-const chords = [
-  { name: "C7", notes: ["C","E","G","Bb"] },
-  { name: "G7", notes: ["G","B","D","F"] },
-  { name: "Cm7b5", notes: ["C","Eb","Gb","Bb"] },
-];
+let correctCount = 0
+let totalCount = 0
 
-let current = null;
+socket.onopen = () => {
+  console.log("🧑‍🎓 student connected")
 
-function nextQuestion() {
-  current = chords[Math.floor(Math.random() * chords.length)];
-  document.getElementById("question").innerText =
-    "请弹奏：" + current.name;
+  socket.send(
+    JSON.stringify({
+      type: "join",
+      id: studentId,
+    })
+  )
 }
 
-window.checkAnswer = function(note) {
-  const correct = current.notes.includes(note);
-  socket.emit("answer", { roomId, correct });
-  nextQuestion();
-};
+// 🎹 点击琴键
 
-nextQuestion();
+document.addEventListener("click", async (e) => {
+  const key = e.target.dataset.note
+  if (!key) return
+
+  await initPiano()
+  playNote(key)
+
+  // ⭐ 模拟判题（你后面可换成真实逻辑）
+
+  const correct = Math.random() > 0.4
+
+  totalCount++
+  if (correct) correctCount++
+
+  // 发给老师
+
+  socket.send(
+    JSON.stringify({
+      type: "answer",
+      id: studentId,
+      correct,
+    })
+  )
+
+  updateProgress()
+
+  // ⭐ 每 10 题 AI 反馈
+
+  if (totalCount % 10 === 0) {
+    showAIReport()
+  }
+})
+
+// 📊 更新进度
+
+function updateProgress() {
+  const el = document.getElementById("progress")
+  if (!el) return
+
+  el.innerText =
+    `已完成 ${totalCount} 题｜正确 ${correctCount}`
+}
+
+// 🤖 离线 AI 评价（增强版）
+
+function showAIReport() {
+  const rate = correctCount / totalCount
+
+  let level = ""
+  let advice = ""
+
+  if (rate > 0.85) {
+    level = "🎖️ 和弦大师"
+    advice = "尝试加入转位与快速识别训练。"
+  } else if (rate > 0.6) {
+    level = "👍 良好水平"
+    advice = "重点练习属七和弦与半减七。"
+  } else {
+    level = "📚 需要加强"
+    advice = "建议回到三和弦分解练习。"
+  }
+
+  alert(
+    `AI学习报告\n\n正确率：${Math.round(rate * 100)}%\n等级：${level}\n建议：${advice}`
+  )
+}
