@@ -1,38 +1,30 @@
-const ws=new WebSocket("ws://"+location.host);
-const pianoDiv=document.getElementById("piano");
-let selected=[];
-let current;
+const socket = io();
 
-const synth=new Tone.Synth().toDestination();
+// 获取房间号
+const params = new URLSearchParams(location.search);
+const roomId = params.get("room") || prompt("输入房间号");
 
-createPiano(pianoDiv,(note,index)=>{
-selected.push(index);
-synth.triggerAttackRelease("C4","8n");
-});
+socket.emit("joinRoom", roomId);
 
-ws.onopen=()=>{
-const name=prompt("输入姓名");
-const room=location.search.replace("?","");
-ws.send(JSON.stringify({type:"join",roomId:room,name}));
+// ===== 题库 =====
+const chords = [
+  { name: "C7", notes: ["C","E","G","Bb"] },
+  { name: "G7", notes: ["G","B","D","F"] },
+  { name: "Cm7b5", notes: ["C","Eb","Gb","Bb"] },
+];
+
+let current = null;
+
+function nextQuestion() {
+  current = chords[Math.floor(Math.random() * chords.length)];
+  document.getElementById("question").innerText =
+    "请弹奏：" + current.name;
+}
+
+window.checkAnswer = function(note) {
+  const correct = current.notes.includes(note);
+  socket.emit("answer", { roomId, correct });
+  nextQuestion();
 };
 
-ws.onmessage=(e)=>{
-const msg=JSON.parse(e.data);
-if(msg.type==="question"){
-current=msg.question;
-document.getElementById("title").innerText=
-current.root+current.type;
-}
-if(msg.type==="result"){
-document.getElementById("feedback").innerText=
-msg.feedback||"";
-current=msg.next;
-selected=[];
-document.getElementById("title").innerText=
-current.root+current.type;
-}
-};
-
-function submit(){
-ws.send(JSON.stringify({type:"answer",notes:selected}));
-}
+nextQuestion();
