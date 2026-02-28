@@ -1,32 +1,56 @@
-const socket = io();
+// ⭐ Classroom Pro v2 — Teacher
 
-// 🎯 随机房间号
-const roomId = Math.random().toString(36).substring(2, 8);
+const socket = new WebSocket(
+  location.origin.replace(/^http/, "ws")
+)
 
-document.getElementById("roomId").innerText = roomId;
+let totalStudents = 0
+let correctTotal = 0
+let answerTotal = 0
 
-// 加入房间
-socket.emit("joinRoom", roomId);
+socket.onopen = () => {
+  console.log("👨‍🏫 teacher connected")
 
-// ✅ 生成二维码（学生扫码直接进）
-const joinUrl =
-  location.origin + "/student.html?room=" + roomId;
+  socket.send(
+    JSON.stringify({
+      type: "teacher",
+    })
+  )
+}
 
-QRCode.toCanvas(document.createElement("canvas"), joinUrl, function (err, canvas) {
-  document.getElementById("qrcode").appendChild(canvas);
-});
+socket.onmessage = function(event) {
+   const data = JSON.parse(event.data)
+   updateStats(data)
+}
 
-// 📊 实时统计
-socket.on("stats", (data) => {
-  document.getElementById("total").innerText = data.total;
-  document.getElementById("correct").innerText = data.correct;
-});
+  // 👥 人数更新
 
-// 🧠 AI反馈
-socket.on("evaluation", (e) => {
-  document.getElementById("evaluation").innerHTML = `
-    <h3>${e.level}</h3>
-    <p>${e.comment}</p>
-    <p><b>练习建议：</b>${e.suggestion}</p>
-  `;
-});
+  if (data.type === "stats") {
+    totalStudents = data.count
+    updateBoard()
+  }
+
+  // 📊 答题更新
+
+  if (data.type === "update") {
+    answerTotal++
+    if (data.correct) correctTotal++
+    updateBoard()
+  }
+}
+
+// 🖥 更新大屏
+
+function updateBoard() {
+  const el1 = document.getElementById("studentCount")
+  const el2 = document.getElementById("accuracy")
+
+  if (el1) el1.innerText = totalStudents
+
+  if (el2 && answerTotal > 0) {
+    const rate = Math.round(
+      (correctTotal / answerTotal) * 100
+    )
+    el2.innerText = rate + "%"
+  }
+}
