@@ -42,10 +42,11 @@
     console.warn("buildPiano not found. Check piano.js loaded.");
   }
 
-  function nextQuestion() {
-    targetNote = NOTE_POOL[Math.floor(Math.random() * NOTE_POOL.length)];
-    setText(elQ, `请弹奏：${targetNote.replace("#", "♯")}`);
-  }
+function nextQuestion() {
+  targetNote = NOTES[Math.floor(Math.random() * NOTES.length)];
+  document.getElementById("questionText").innerText =
+    "请弹奏：" + targetNote;
+}
 
   function offlineAIAdvice() {
     const rate = totalCount === 0 ? 0 : correctCount / totalCount;

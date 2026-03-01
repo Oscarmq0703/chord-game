@@ -219,45 +219,32 @@ code.code{
 }
 
 /* ====== 🎹 Piano UI（两八度）统一风格 ====== */
-.piano{
+.piano {
   position: relative;
-  width: 100%;
-  max-width: 840px;
-  height: 220px;
-  margin: 14px auto 0;
-  border-radius: 16px;
-  border: 1px solid var(--stroke);
-  background: rgba(0,0,0,.18);
-  overflow:hidden;
+  width: 1440px;
+  height: 240px;
+  margin: 20px auto;
 }
 
-/* 白键：用 flex 排 */
-.piano .white-key{
+.white-key {
   position: relative;
-  display:inline-block;
-  width: 40px;
-  height: 220px;
-  background: linear-gradient(180deg, #ffffff, #e9eefc);
-  border-right: 1px solid rgba(0,0,0,.18);
+  display: inline-block;
+  width: 60px;
+  height: 240px;
+  background: linear-gradient(white, #e8e8e8);
+  border: 1px solid #444;
   z-index: 1;
 }
 
-/* 黑键：悬浮 */
-.piano .black-key{
+.black-key {
   position: absolute;
-  width: 26px;
-  height: 130px;
-  background: linear-gradient(180deg, #1a1a1a, #000000);
-  border: 1px solid rgba(255,255,255,.08);
-  border-bottom-left-radius: 6px;
-  border-bottom-right-radius: 6px;
-  z-index: 2;
+  width: 40px;
+  height: 140px;
+  background: black;
   top: 0;
-  box-shadow: 0 8px 18px rgba(0,0,0,.45);
+  z-index: 2;
+  border-radius: 0 0 4px 4px;
 }
-
-.piano .white-key:active{ filter: brightness(.95); }
-.piano .black-key:active{ filter: brightness(1.1); }
 
 /* 手机横屏优化 */
 @media (orientation: landscape){
