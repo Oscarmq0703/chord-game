@@ -24,7 +24,8 @@
       <div class="grid">
         <div class="card pad">
           <h1 class="h1" style="margin-bottom:6px;">
-            请弹奏：<span id="questionText" style="font-size:56px;font-weight:900;">--</span>
+            请弹奏：
+            <span id="questionText" style="font-size:56px;font-weight:900;">--</span>
           </h1>
           <p class="p">点击琴键作答（若无声音，请先点击页面激活音频）。</p>
 
@@ -58,9 +59,9 @@
         </div>
       </div>
 
-      <!-- 🎹 全宽键盘区：不放在 card 里，避免裁剪 -->
+      <!-- ✅ 键盘：放在 card 外，避免被裁切 -->
       <div class="pianoFull">
-        <div id="piano"></div>
+        <div id="piano" class="piano"></div>
       </div>
 
       <div class="footer">© Classroom Pro</div>
@@ -69,10 +70,21 @@
 
   <script src="piano.js"></script>
   <script src="student.js"></script>
+
   <script>
+    // 显示房间号
     const p = new URLSearchParams(location.search);
     const room = p.get("room") || localStorage.getItem("CLASSROOM_ROOM") || "—";
     document.getElementById("roomCode").textContent = room;
+
+    // ✅ 无论 student.js 是否出错，键盘都要显示
+    window.addEventListener("DOMContentLoaded", () => {
+      if (typeof window.buildPiano === "function") {
+        window.buildPiano("piano");
+      } else {
+        console.error("buildPiano not found (piano.js not loaded).");
+      }
+    });
   </script>
 </body>
 </html>

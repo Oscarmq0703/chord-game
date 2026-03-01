@@ -1,63 +1,96 @@
-let sampler;
-let audioReady = false;
+// public/piano.js — Real 2-octave keyboard layout (C4–B5)
+// Generates white keys in a row + black keys floating above at correct positions.
 
-async function initPiano() {
-  if (audioReady) return;
+(function () {
+  // Two octaves: C4..B5
+  const WHITE_NOTES = [
+    "C4","D4","E4","F4","G4","A4","B4",
+    "C5","D5","E5","F5","G5","A5","B5"
+  ];
 
-  await Tone.start();
+  // Black keys mapped to the "gap after which white key" (index in WHITE_NOTES)
+  // C# is between C and D -> after C (whiteIndex 0)
+  // D# between D and E -> after D (1)
+  // no black between E-F
+  // F# after F (3)
+  // G# after G (4)
+  // A# after A (5)
+  // no black between B-C
+  const BLACK_KEYS = [
+    { note: "C#4", afterWhite: 0 },
+    { note: "D#4", afterWhite: 1 },
+    { note: "F#4", afterWhite: 3 },
+    { note: "G#4", afterWhite: 4 },
+    { note: "A#4", afterWhite: 5 },
 
-  sampler = new Tone.Sampler({
-    urls: {
-      A4: "A4.mp3",
-      C4: "C4.mp3",
-      D#4: "Ds4.mp3",
-      F#4: "Fs4.mp3",
-    },
-    baseUrl: "https://tonejs.github.io/audio/salamander/",
-    release: 1,
-  }).toDestination();
+    { note: "C#5", afterWhite: 7 },
+    { note: "D#5", afterWhite: 8 },
+    { note: "F#5", afterWhite: 10 },
+    { note: "G#5", afterWhite: 11 },
+    { note: "A#5", afterWhite: 12 },
+  ];
 
-  audioReady = true;
-}
+  function buildPiano(containerId) {
+    const root = document.getElementById(containerId);
+    if (!root) return;
 
-const NOTES = [
-  "C4","C#4","D4","D#4","E4","F4",
-  "F#4","G4","G#4","A4","A#4","B4",
-  "C5","C#5","D5","D#5","E5","F5",
-  "F#5","G5","G#5","A5","A#5","B5"
-];
+    // Clean
+    root.innerHTML = "";
+    root.classList.add("piano");
 
-function buildPiano(containerId) {
-  const piano = document.getElementById(containerId);
-  piano.innerHTML = "";
+    // Create layers
+    const whiteRow = document.createElement("div");
+    whiteRow.className = "piano-white-row";
 
-  const whiteWidth = 60;
-  let whiteIndex = 0;
+    const blackLayer = document.createElement("div");
+    blackLayer.className = "piano-black-layer";
 
-  NOTES.forEach((note) => {
-    const isBlack = note.includes("#");
-    const key = document.createElement("div");
-    key.dataset.note = note;
+    root.appendChild(whiteRow);
+    root.appendChild(blackLayer);
 
-    if (isBlack) {
-      key.className = "black-key";
-      key.style.left = (whiteIndex * whiteWidth - 19) + "px";
-    } else {
-      key.className = "white-key";
-      whiteIndex++;
-    }
+    // Render white keys
+    WHITE_NOTES.forEach((note) => {
+      const k = document.createElement("button");
+      k.type = "button";
+      k.className = "white-key";
+      k.dataset.note = note;
+      k.title = note;
 
-    key.addEventListener("click", async () => {
-      await initPiano();
-      sampler.triggerAttackRelease(note, "8n");
+      // Click emits notePlayed event (student.js listens to it)
+      k.addEventListener("click", () => {
+        document.dispatchEvent(new CustomEvent("notePlayed", { detail: note }));
+      });
 
-      document.dispatchEvent(
-        new CustomEvent("notePlayed", { detail: note })
-      );
+      whiteRow.appendChild(k);
     });
 
-    piano.appendChild(key);
-  });
-}
+    // Compute sizes from CSS (so layout stays responsive)
+    // fallback values if not measurable yet
+    const whiteW = whiteRow.querySelector(".white-key")?.getBoundingClientRect().width || 56;
+    const blackW = 36;
 
-window.buildPiano = buildPiano;
+    // Render black keys (absolute positioning)
+    BLACK_KEYS.forEach(({ note, afterWhite }) => {
+      const k = document.createElement("button");
+      k.type = "button";
+      k.className = "black-key";
+      k.dataset.note = note;
+      k.title = note;
+
+      // Place black key centered between two whites:
+      // left = (afterWhite + 1) * whiteW - blackW/2
+      const left = (afterWhite + 1) * whiteW - blackW / 2;
+      k.style.left = `${left}px`;
+
+      k.addEventListener("click", (ev) => {
+        // Prevent white key click "through"
+        ev.stopPropagation();
+        document.dispatchEvent(new CustomEvent("notePlayed", { detail: note }));
+      });
+
+      blackLayer.appendChild(k);
+    });
+  }
+
+  window.buildPiano = buildPiano;
+})();
