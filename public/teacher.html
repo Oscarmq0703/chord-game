@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>学生答题 - 和弦课堂神器</title>
+  <title>教师控制台 - 和弦课堂神器</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 
@@ -12,10 +12,10 @@
     <div class="container">
       <div class="topbar">
         <div class="brand">
-          <div class="logo">🎓</div>
+          <div class="logo">🧑‍🏫</div>
           <div>
-            <div class="brandTitle">学生答题</div>
-            <div class="brandSub">Classroom Pro · 建议横屏</div>
+            <div class="brandTitle">教师控制台</div>
+            <div class="brandSub">Classroom Pro · 实时统计</div>
           </div>
         </div>
         <a class="btn ghost" href="index.html">← 返回首页</a>
@@ -23,56 +23,45 @@
 
       <div class="grid">
         <div class="card pad">
-          <h1 class="h1" style="margin-bottom:6px;">
-            请弹奏：<span id="questionText" style="font-size:56px;font-weight:900;">--</span>
-          </h1>
-          <p class="p">点击琴键作答（若无声音，请先点击页面激活音频）。</p>
-
-          <div style="margin-top:14px;">
-            <div class="badge">进度：<b id="progressText" style="color:var(--text)">完成 0 ｜ 正确 0</b></div>
-          </div>
-
-          <div class="footer">提示：手机横屏体验最佳。</div>
-        </div>
-
-        <div class="card pad">
-          <h2 class="h2">本节课信息</h2>
-          <p class="p">房间号：</p>
-          <div style="margin-top:10px;"><code class="code" id="roomCode">—</code></div>
+          <h1 class="h1">本节课实时概览</h1>
+          <p class="p">投屏建议：浏览器全屏（F11）。</p>
 
           <div class="kpiRow">
             <div class="kpi">
-              <p class="label">本次正确</p>
-              <p class="value" id="correctNum">0</p>
+              <p class="label">在线人数</p>
+              <p class="value" id="students">0</p>
             </div>
             <div class="kpi">
-              <p class="label">本次完成</p>
-              <p class="value" id="totalNum">0</p>
+              <p class="label">正确率</p>
+              <p class="value"><span id="accuracy">0</span>%</p>
             </div>
           </div>
 
+          <div style="margin-top:14px;">
+            <div class="badge">房间号：<b id="roomText" style="color:var(--text)">…</b></div>
+          </div>
+
+          <div class="footer">学生每次作答都会更新统计。</div>
+        </div>
+
+        <div class="card pad">
+          <h2 class="h2">AI 反馈</h2>
+          <p class="p">每 10 题更新一次学习点评与练习建议。</p>
+
           <div class="kpi" style="margin-top:12px;">
-            <p class="label">AI 学习建议</p>
-            <p id="aiHint" style="margin:0;line-height:1.6;color:var(--text);">每 10 题会更新一次建议。</p>
+            <p class="label">当前反馈</p>
+            <p id="aiText" style="margin:0;line-height:1.6;color:var(--text);">等待学生答题中…</p>
           </div>
         </div>
       </div>
-
-      <!-- 🎹 全宽键盘区：不放在 card 里，避免裁剪 -->
-      <div class="pianoFull">
-        <div id="piano"></div>
-      </div>
-
-      <div class="footer">© Classroom Pro</div>
     </div>
   </div>
 
-  <script src="piano.js"></script>
-  <script src="student.js"></script>
+  <script src="teacher.js"></script>
   <script>
     const p = new URLSearchParams(location.search);
     const room = p.get("room") || localStorage.getItem("CLASSROOM_ROOM") || "—";
-    document.getElementById("roomCode").textContent = room;
+    document.getElementById("roomText").textContent = room;
   </script>
 </body>
 </html>
