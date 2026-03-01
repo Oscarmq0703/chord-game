@@ -4,59 +4,272 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <title>和弦课堂神器</title>
-  <link rel="stylesheet" href="styles.css" />
 
-  <!-- ✅ 二维码库：CDN（最稳） -->
+  <!-- 二维码库（CDN） -->
   <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 
   <style>
-    .wrap { max-width: 860px; margin: 0 auto; padding: 18px; text-align: center; }
-    .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; }
-    .row { display:flex; gap:16px; justify-content:center; flex-wrap:wrap; }
-    .qr { width: 240px; height: 240px; display:flex; align-items:center; justify-content:center; margin: 10px auto; }
-    .muted { color:#6b7280; font-size:14px; }
-    input { padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 10px; font-size: 16px; }
-    button { padding: 10px 14px; border: 0; border-radius: 10px; background:#111827; color:#fff; cursor:pointer; }
-    a.btn { display:inline-block; padding: 10px 14px; border-radius: 10px; background:#2563eb; color:#fff; text-decoration:none; }
-    code { background:#f3f4f6; padding:2px 6px; border-radius: 6px; }
+    :root{
+      --bg1:#0b1220;
+      --bg2:#0f1a33;
+      --card:#0b1324cc;
+      --stroke:#24314d;
+      --text:#e8eefc;
+      --muted:#a9b7d3;
+      --blue:#4f8cff;
+      --blue2:#2d6bff;
+      --ok:#22c55e;
+      --shadow: 0 18px 60px rgba(0,0,0,.35);
+      --radius: 18px;
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      color:var(--text);
+      font-family: ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial;
+      background:
+        radial-gradient(1100px 700px at 20% 10%, rgba(79,140,255,.30), transparent 60%),
+        radial-gradient(900px 600px at 85% 35%, rgba(34,197,94,.16), transparent 60%),
+        linear-gradient(180deg, var(--bg1), var(--bg2));
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding: 22px;
+    }
+    .wrap{
+      width:min(980px, 100%);
+      display:grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap:16px;
+    }
+    @media (max-width: 860px){
+      .wrap{ grid-template-columns: 1fr; }
+    }
+    .card{
+      background: var(--card);
+      border: 1px solid var(--stroke);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      overflow:hidden;
+    }
+    .left{
+      padding: 22px 22px 18px;
+      position:relative;
+    }
+    .badge{
+      display:inline-flex;
+      gap:10px;
+      align-items:center;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--stroke);
+      background: rgba(255,255,255,.06);
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .dot{
+      width:9px;height:9px;border-radius:999px;background: var(--ok);
+      box-shadow: 0 0 0 6px rgba(34,197,94,.12);
+    }
+    h1{
+      margin: 14px 0 8px;
+      font-size: 34px;
+      letter-spacing: .2px;
+      line-height:1.1;
+    }
+    .sub{
+      margin: 0 0 18px;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.6;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:12px;
+      margin-top: 14px;
+    }
+    @media (max-width: 520px){
+      .grid{ grid-template-columns: 1fr; }
+    }
+    .mini{
+      padding: 14px;
+      border: 1px solid var(--stroke);
+      border-radius: 14px;
+      background: rgba(255,255,255,.05);
+    }
+    .mini h3{
+      margin:0 0 6px;
+      font-size: 14px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .mini p{
+      margin:0;
+      font-size: 14px;
+      line-height: 1.55;
+    }
+    .actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top: 16px;
+      align-items:center;
+    }
+    .btn{
+      display:inline-flex;
+      gap:10px;
+      align-items:center;
+      justify-content:center;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--stroke);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      text-decoration:none;
+      cursor:pointer;
+      user-select:none;
+      transition: transform .06s ease, background .15s ease;
+    }
+    .btn:hover{ background: rgba(255,255,255,.09); }
+    .btn:active{ transform: translateY(1px); }
+    .btn.primary{
+      border-color: rgba(79,140,255,.55);
+      background: linear-gradient(180deg, rgba(79,140,255,.22), rgba(45,107,255,.18));
+    }
+    .btn.primary:hover{
+      background: linear-gradient(180deg, rgba(79,140,255,.28), rgba(45,107,255,.22));
+    }
+    .btn.small{
+      padding: 10px 12px;
+      border-radius: 12px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+    code{
+      display:block;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--stroke);
+      background: rgba(0,0,0,.22);
+      color: #dbe7ff;
+      font-family: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
+      font-size: 12.5px;
+      overflow:auto;
+      white-space: nowrap;
+    }
+    .right{
+      padding: 16px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+    }
+    .qrWrap{
+      width: 260px;
+      height: 260px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.96);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      border: 1px solid rgba(255,255,255,.6);
+      box-shadow: 0 10px 40px rgba(0,0,0,.35);
+    }
+    .hint{
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+      margin:0;
+    }
+    .roomPill{
+      display:inline-flex;
+      gap:10px;
+      align-items:center;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--stroke);
+      background: rgba(255,255,255,.06);
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .kbd{
+      padding: 2px 8px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(0,0,0,.18);
+      color: #dbe7ff;
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      font-size: 12px;
+    }
+    .footer{
+      grid-column: 1 / -1;
+      color: rgba(169,183,211,.75);
+      text-align:center;
+      font-size: 12px;
+      margin-top: 2px;
+    }
   </style>
 </head>
 
 <body>
   <div class="wrap">
-    <h1>🎹 和弦课堂神器</h1>
-    <p class="muted">教师在此页生成房间二维码，学生扫码进入答题。</p>
+    <!-- 左侧：介绍 + 入口 -->
+    <div class="card left">
+      <div class="badge"><span class="dot"></span> 系统在线 · Classroom Pro</div>
+      <h1>🎹 和弦课堂神器</h1>
+      <p class="sub">
+        首页自动生成本节课房间二维码，学生扫码即进。教师端实时统计答题与正确率，并每 10 题生成离线 AI 学习反馈与练习建议。
+      </p>
 
-    <div class="card">
-      <div class="row">
-        <div style="min-width:260px;">
-          <h3>1) 房间号</h3>
-          <p class="muted">可自定义，也可用默认随机值</p>
-          <input id="roomInput" placeholder="例如：A101" />
-          <div style="margin-top:10px;">
-            <button id="genBtn">生成二维码</button>
-          </div>
-          <p class="muted" style="margin-top:10px;">
-            学生链接：<br/>
-            <code id="joinUrlText"></code>
-          </p>
-          <p style="margin-top:12px;">
-            <a class="btn" id="teacherLink" href="teacher.html">进入教师控制台</a>
-          </p>
+      <div class="grid">
+        <div class="mini">
+          <h3>学生端</h3>
+          <p>扫码进入后直接弹奏键盘作答，支持手机横屏，实时回传数据。</p>
         </div>
-
-        <div style="min-width:260px;">
-          <h3>2) 学生扫码</h3>
-          <div id="qrcode" class="qr"></div>
-          <p class="muted">若未显示二维码：请刷新或检查浏览器控制台是否报错</p>
+        <div class="mini">
+          <h3>教师端</h3>
+          <p>大屏展示：在线人数、正确率、答题进度、AI 评价与建议。</p>
         </div>
       </div>
+
+      <div class="actions">
+        <a id="teacherLink" class="btn primary" href="teacher.html">🧑‍🏫 进入教师控制台</a>
+        <button id="newRoomBtn" class="btn" type="button">🔄 刷新新房间</button>
+        <button id="copyBtn" class="btn small" type="button">📋 复制学生链接</button>
+      </div>
+
+      <div style="margin-top:14px;">
+        <div class="roomPill">
+          本节课房间：<span class="kbd" id="roomText">…</span>
+        </div>
+        <div style="margin-top:10px;">
+          <code id="joinUrlText">…</code>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右侧：二维码 -->
+    <div class="card right">
+      <div class="qrWrap" id="qrcode"></div>
+      <p class="hint">
+        学生打开手机扫码进入答题<br/>
+        若打不开，请使用下方链接手动进入
+      </p>
+    </div>
+
+    <div class="footer">
+      提示：上课前先打开本页面，可唤醒 Render 服务，学生进入更顺畅。
     </div>
   </div>
 
   <script>
-    // ✅ 生成一个默认房间号（刷新即可变化）
-    function randomRoom() {
+    // 生成短房间号：6位大写字母数字
+    function genRoom() {
       return Math.random().toString(36).slice(2, 8).toUpperCase();
     }
 
@@ -67,37 +280,52 @@
     }
 
     function renderQR(text) {
-      const el = document.getElementById("qrcode");
-      el.innerHTML = ""; // 清空旧二维码
+      const box = document.getElementById("qrcode");
+      box.innerHTML = "";
       QRCode.toCanvas(text, { width: 240, margin: 1 }, (err, canvas) => {
         if (err) {
-          el.innerHTML = "<span style='color:#ef4444'>二维码生成失败（请看控制台报错）</span>";
+          box.innerHTML = "<div style='color:#111827;font-weight:700'>二维码生成失败</div>";
           console.error(err);
           return;
         }
-        el.appendChild(canvas);
+        box.appendChild(canvas);
       });
     }
 
-    function generate(room) {
+    function applyRoom(room) {
       const { joinUrl, teacherUrl } = buildUrls(room);
+      document.getElementById("roomText").textContent = room;
       document.getElementById("joinUrlText").textContent = joinUrl;
-      document.getElementById("teacherLink").href = teacherUrl; // 教师控制台带 room
+      document.getElementById("teacherLink").href = teacherUrl;
       renderQR(joinUrl);
+      // 也把房间号存一下，避免误刷新可找回（同一浏览器）
+      localStorage.setItem("CLASSROOM_ROOM", room);
     }
 
-    // ✅ 等 DOM 就绪后再执行（避免 qrcode div 还没渲染）
+    function currentRoom() {
+      // 优先用本地缓存（避免误刷新丢房间），没有就新生成
+      return localStorage.getItem("CLASSROOM_ROOM") || genRoom();
+    }
+
     window.addEventListener("DOMContentLoaded", () => {
-      const input = document.getElementById("roomInput");
-      const btn = document.getElementById("genBtn");
+      applyRoom(currentRoom());
 
-      input.value = randomRoom();
-      generate(input.value);
+      document.getElementById("newRoomBtn").addEventListener("click", () => {
+        const room = genRoom();
+        applyRoom(room);
+      });
 
-      btn.addEventListener("click", () => {
-        const room = (input.value || "").trim() || randomRoom();
-        input.value = room;
-        generate(room);
+      document.getElementById("copyBtn").addEventListener("click", async () => {
+        const text = document.getElementById("joinUrlText").textContent;
+        try {
+          await navigator.clipboard.writeText(text);
+          const btn = document.getElementById("copyBtn");
+          const old = btn.textContent;
+          btn.textContent = "✅ 已复制";
+          setTimeout(() => (btn.textContent = old), 900);
+        } catch (e) {
+          alert("复制失败，请长按链接手动复制。");
+        }
       });
     });
   </script>
