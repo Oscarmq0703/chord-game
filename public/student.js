@@ -22,7 +22,12 @@
     params.get("room") || localStorage.getItem("CLASSROOM_ROOM") || null;
 
   // 学生 ID
-  const studentId = "stu_" + Math.random().toString(36).slice(2, 10);
+ let studentId = localStorage.getItem("studentId");
+
+if (!studentId) {
+  studentId = "stu_" + Math.random().toString(36).slice(2, 10);
+  localStorage.setItem("studentId", studentId);
+}
 
   // ====== v3.5 先实现“稳定可用”的判题：目标音符 ======
   // 真实和弦题库（七和弦/属七/半减七）下一步 v4 我可以继续给你升级

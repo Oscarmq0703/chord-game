@@ -25,10 +25,12 @@ wss.on("connection", (ws) => {
       sendStats();
     }
 
-    if (data.type === "join") {
-      students[data.id] = { correct: 0, total: 0 };
-      sendStats();
-    }
+if (data.type === "join") {
+  if (!students[data.id]) {
+    students[data.id] = { correct: 0, total: 0 };
+  }
+  sendStats();
+}
 
     if (data.type === "answer") {
       const stu = students[data.id];
