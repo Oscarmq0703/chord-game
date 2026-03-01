@@ -1,31 +1,105 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="stylesheet" href="styles.css">
-<script src="qrcode.min.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>和弦课堂神器</title>
+  <link rel="stylesheet" href="styles.css" />
+
+  <!-- ✅ 二维码库：CDN（最稳） -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+
+  <style>
+    .wrap { max-width: 860px; margin: 0 auto; padding: 18px; text-align: center; }
+    .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; }
+    .row { display:flex; gap:16px; justify-content:center; flex-wrap:wrap; }
+    .qr { width: 240px; height: 240px; display:flex; align-items:center; justify-content:center; margin: 10px auto; }
+    .muted { color:#6b7280; font-size:14px; }
+    input { padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 10px; font-size: 16px; }
+    button { padding: 10px 14px; border: 0; border-radius: 10px; background:#111827; color:#fff; cursor:pointer; }
+    a.btn { display:inline-block; padding: 10px 14px; border-radius: 10px; background:#2563eb; color:#fff; text-decoration:none; }
+    code { background:#f3f4f6; padding:2px 6px; border-radius: 6px; }
+  </style>
 </head>
 
 <body>
-<h1>🎹 和弦课堂神器 v3.5</h1>
+  <div class="wrap">
+    <h1>🎹 和弦课堂神器</h1>
+    <p class="muted">教师在此页生成房间二维码，学生扫码进入答题。</p>
 
-<div id="qrcode"></div>
+    <div class="card">
+      <div class="row">
+        <div style="min-width:260px;">
+          <h3>1) 房间号</h3>
+          <p class="muted">可自定义，也可用默认随机值</p>
+          <input id="roomInput" placeholder="例如：A101" />
+          <div style="margin-top:10px;">
+            <button id="genBtn">生成二维码</button>
+          </div>
+          <p class="muted" style="margin-top:10px;">
+            学生链接：<br/>
+            <code id="joinUrlText"></code>
+          </p>
+          <p style="margin-top:12px;">
+            <a class="btn" id="teacherLink" href="teacher.html">进入教师控制台</a>
+          </p>
+        </div>
 
-<p>学生扫码进入答题</p>
+        <div style="min-width:260px;">
+          <h3>2) 学生扫码</h3>
+          <div id="qrcode" class="qr"></div>
+          <p class="muted">若未显示二维码：请刷新或检查浏览器控制台是否报错</p>
+        </div>
+      </div>
+    </div>
+  </div>
 
-<a href="teacher.html">👉 教师控制台</a>
+  <script>
+    // ✅ 生成一个默认房间号（刷新即可变化）
+    function randomRoom() {
+      return Math.random().toString(36).slice(2, 8).toUpperCase();
+    }
 
-<script>
-const room = "class001"
-const url =
-  location.origin + "/student.html?room=" + room
+    function buildUrls(room) {
+      const joinUrl = `${location.origin}/student.html?room=${encodeURIComponent(room)}`;
+      const teacherUrl = `${location.origin}/teacher.html?room=${encodeURIComponent(room)}`;
+      return { joinUrl, teacherUrl };
+    }
 
-new QRCode(document.getElementById("qrcode"), {
-  text: url,
-  width: 220,
-  height: 220,
-})
-</script>
+    function renderQR(text) {
+      const el = document.getElementById("qrcode");
+      el.innerHTML = ""; // 清空旧二维码
+      QRCode.toCanvas(text, { width: 240, margin: 1 }, (err, canvas) => {
+        if (err) {
+          el.innerHTML = "<span style='color:#ef4444'>二维码生成失败（请看控制台报错）</span>";
+          console.error(err);
+          return;
+        }
+        el.appendChild(canvas);
+      });
+    }
 
+    function generate(room) {
+      const { joinUrl, teacherUrl } = buildUrls(room);
+      document.getElementById("joinUrlText").textContent = joinUrl;
+      document.getElementById("teacherLink").href = teacherUrl; // 教师控制台带 room
+      renderQR(joinUrl);
+    }
+
+    // ✅ 等 DOM 就绪后再执行（避免 qrcode div 还没渲染）
+    window.addEventListener("DOMContentLoaded", () => {
+      const input = document.getElementById("roomInput");
+      const btn = document.getElementById("genBtn");
+
+      input.value = randomRoom();
+      generate(input.value);
+
+      btn.addEventListener("click", () => {
+        const room = (input.value || "").trim() || randomRoom();
+        input.value = room;
+        generate(room);
+      });
+    });
+  </script>
 </body>
 </html>
