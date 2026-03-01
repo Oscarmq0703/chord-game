@@ -29,38 +29,42 @@ function randomChord() {
   return keys[Math.floor(Math.random() * keys.length)]
 }
 
-function buildPiano() {
-  const piano = document.getElementById("piano")
-  Object.keys(notes).forEach((n) => {
-    const key = document.createElement("div")
-    key.className = "white-key"
-    key.innerText = n
-    key.onclick = () => press(n)
-    piano.appendChild(key)
-  })
+const socket = new WebSocket(
+  location.origin.replace(/^http/, "ws")
+)
+
+const studentId =
+  "stu_" + Math.random().toString(36).slice(2)
+
+socket.onopen = () => {
+  socket.send(
+    JSON.stringify({ type: "join", id: studentId })
+  )
 }
 
-function press(note) {
-  playNote(notes[note])
-  selected.push(note)
+// 🎹 构建两八度键盘
 
-  if (selected.length === 1) {
-    const correct = selected[0] === target
+buildPiano("piano")
 
-    socket.send(
-      JSON.stringify({
-        type: "answer",
-        id: studentId,
-        correct,
-      })
-    )
+// 🎯 判定逻辑（示例）
 
-    document.getElementById("progress").innerText =
-      correct ? "正确！" : "错误"
+let correctCount = 0
+let totalCount = 0
 
-    selected = []
-    target = randomChord()
-  }
-}
+document.addEventListener("notePlayed", (e) => {
+  const correct = Math.random() > 0.5
 
-buildPiano()
+  totalCount++
+  if (correct) correctCount++
+
+  socket.send(
+    JSON.stringify({
+      type: "answer",
+      id: studentId,
+      correct,
+    })
+  )
+
+  document.getElementById("progress").innerText =
+    `完成 ${totalCount} ｜ 正确 ${correctCount}`
+})

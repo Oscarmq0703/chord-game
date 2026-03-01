@@ -1,45 +1,31 @@
 <!DOCTYPE html>
-<<<<<<< HEAD
 <html>
 <head>
-  <meta charset="UTF-8" />
-  <title>🎹 和弦课堂神器</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="styles.css">
+<script src="qrcode.min.js"></script>
 </head>
+
 <body>
-  <h1>🎹 和弦课堂神器已上线！</h1>
-  <p>学生扫码即可开始答题</p>
+<h1>🎹 和弦课堂神器 v3.5</h1>
+
+<div id="qrcode"></div>
+
+<p>学生扫码进入答题</p>
+
+<a href="teacher.html">👉 教师控制台</a>
+
+<script>
+const room = "class001"
+const url =
+  location.origin + "/student.html?room=" + room
+
+new QRCode(document.getElementById("qrcode"), {
+  text: url,
+  width: 220,
+  height: 220,
+})
+</script>
+
 </body>
 </html>
-=======
-<html lang="zh">
-<head>
-  <meta charset="UTF-8" />
-  <title>和弦课堂神器</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      padding: 40px;
-    }
-    .btn {
-      padding: 14px 28px;
-      font-size: 20px;
-      margin: 10px;
-      cursor: pointer;
-    }
-  </style>
-</head>
-<body>
-  <h1>🎹 和弦课堂神器</h1>
-  <p>请选择身份进入</p>
-
-  <button class="btn" onclick="location.href='teacher.html'">
-    🧑‍🏫 教师端
-  </button>
-
-  <button class="btn" onclick="location.href='student.html'">
-    🎓 学生端
-  </button>
-</body>
-</html>
->>>>>>> f3c27e6 (upgrade classroom pro)
