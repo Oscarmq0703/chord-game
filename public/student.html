@@ -1,17 +1,78 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="stylesheet" href="styles.css">
-<script src="https://unpkg.com/tone@14.7.77/build/Tone.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>学生答题 - 和弦课堂神器</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
+
 <body>
-<h2>学生答题端</h2>
+  <div class="shell">
+    <div class="container">
+      <div class="topbar">
+        <div class="brand">
+          <div class="logo">🎓</div>
+          <div>
+            <div class="title">学生答题</div>
+            <div class="tag">Classroom Pro · 建议横屏</div>
+          </div>
+        </div>
+        <a class="btn ghost" href="index.html">← 返回首页</a>
+      </div>
 
-<div id="piano" class="piano"></div>
-<p id="progress"></p>
+      <div class="grid">
+        <div class="card pad">
+          <h1 class="h1">按要求弹奏 / 选择音符</h1>
+          <p class="p" id="questionText">正在加载题目…</p>
 
-<script src="piano.js"></script>
-<script src="student.js"></script>
+          <!-- 🎹 键盘容器（piano.js 负责生成键） -->
+          <div id="piano" class="piano"></div>
+
+          <div style="margin-top:14px;">
+            <div class="badge">进度：<b id="progressText" style="color:var(--text)">0 / 0</b></div>
+          </div>
+
+          <div class="footer">提示：若无声音，请点击一次页面以激活音频。</div>
+        </div>
+
+        <div class="card pad">
+          <h2 class="h1" style="font-size:20px;margin-bottom:6px;">本节课信息</h2>
+          <p class="p">你所在房间号：</p>
+          <div style="margin-top:10px;">
+            <code class="code" id="roomCode">—</code>
+          </div>
+
+          <div class="kpiRow" style="margin-top:12px;">
+            <div class="kpi">
+              <p class="label">本次正确</p>
+              <p class="value" id="correctNum">0</p>
+            </div>
+            <div class="kpi">
+              <p class="label">本次完成</p>
+              <p class="value" id="totalNum">0</p>
+            </div>
+          </div>
+
+          <div class="kpi" style="margin-top:12px;">
+            <p class="label">AI 学习建议</p>
+            <p id="aiHint" style="margin:0;line-height:1.6;color:var(--text);">
+              每 10 题会弹出一次学习反馈。
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 你的 student.js / piano.js 继续用 -->
+  <script src="piano.js"></script>
+  <script src="student.js"></script>
+
+  <script>
+    const p = new URLSearchParams(location.search);
+    const room = p.get("room") || localStorage.getItem("CLASSROOM_ROOM") || "—";
+    document.getElementById("roomCode").textContent = room;
+  </script>
 </body>
 </html>

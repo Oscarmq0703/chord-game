@@ -1,15 +1,72 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh">
 <head>
-<link rel="stylesheet" href="styles.css">
-<script src="https://unpkg.com/tone@14.7.77/build/Tone.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>教师控制台 - 和弦课堂神器</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
+
 <body>
-<h1>教师控制台</h1>
+  <div class="shell">
+    <div class="container">
+      <div class="topbar">
+        <div class="brand">
+          <div class="logo">🧑‍🏫</div>
+          <div>
+            <div class="title">教师控制台</div>
+            <div class="tag">Classroom Pro · 实时统计</div>
+          </div>
+        </div>
+        <a class="btn ghost" href="index.html">← 返回首页</a>
+      </div>
 
-<p>在线人数：<span id="students">0</span></p>
-<p>正确率：<span id="accuracy">0%</span></p>
+      <div class="grid">
+        <div class="card pad">
+          <h1 class="h1">本节课实时概览</h1>
+          <p class="p">投屏建议：全屏浏览器（F11）。</p>
 
-<script src="teacher.js"></script>
+          <div class="kpiRow">
+            <div class="kpi">
+              <p class="label">在线人数</p>
+              <p class="value" id="students">0</p>
+            </div>
+            <div class="kpi">
+              <p class="label">正确率</p>
+              <p class="value"><span id="accuracy">0</span>%</p>
+            </div>
+          </div>
+
+          <div style="margin-top:14px;">
+            <div class="badge">房间号：<b id="roomText" style="color:var(--text)">…</b></div>
+          </div>
+
+          <div class="footer">数据实时更新：学生每次作答都会刷新正确率。</div>
+        </div>
+
+        <div class="card pad">
+          <h2 class="h1" style="font-size:20px;margin-bottom:6px;">AI 反馈</h2>
+          <p class="p" style="margin-bottom:10px;">每 10 题推送一次学习点评与练习建议。</p>
+
+          <div class="kpi" style="margin-top:8px;">
+            <p class="label">当前反馈</p>
+            <p id="aiText" style="margin:0;line-height:1.6;color:var(--text);">
+              等待学生答题中…
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 你的 teacher.js 继续用（不变） -->
+  <script src="teacher.js"></script>
+
+  <script>
+    // 显示房间号（如果 URL 有 ?room=XXXX）
+    const p = new URLSearchParams(location.search);
+    const room = p.get("room") || localStorage.getItem("CLASSROOM_ROOM") || "—";
+    document.getElementById("roomText").textContent = room;
+  </script>
 </body>
 </html>
