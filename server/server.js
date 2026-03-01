@@ -13,29 +13,23 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "../public/index.html"));
 });
 
-let teacherSocket = null;
+let teacher = null;
 let students = {};
 
 wss.on("connection", (ws) => {
   ws.on("message", (msg) => {
     const data = JSON.parse(msg);
 
-    // 教师连接
     if (data.type === "teacher") {
-      teacherSocket = ws;
+      teacher = ws;
       sendStats();
     }
 
-    // 学生加入
     if (data.type === "join") {
-      students[data.id] = {
-        correct: 0,
-        total: 0,
-      };
+      students[data.id] = { correct: 0, total: 0 };
       sendStats();
     }
 
-    // 学生答题
     if (data.type === "answer") {
       const stu = students[data.id];
       if (!stu) return;
@@ -48,21 +42,14 @@ wss.on("connection", (ws) => {
   });
 
   ws.on("close", () => {
-    for (let id in students) {
-      if (students[id].socket === ws) {
-        delete students[id];
-      }
-    }
-    if (ws === teacherSocket) teacherSocket = null;
     sendStats();
   });
 });
 
 function sendStats() {
-  if (!teacherSocket) return;
+  if (!teacher) return;
 
   const studentCount = Object.keys(students).length;
-
   let totalAnswers = 0;
   let totalCorrect = 0;
 
@@ -76,7 +63,7 @@ function sendStats() {
       ? 0
       : Math.round((totalCorrect / totalAnswers) * 100);
 
-  teacherSocket.send(
+  teacher.send(
     JSON.stringify({
       type: "stats",
       students: studentCount,

@@ -1,8 +1,8 @@
 let sampler;
-let audioStarted = false;
+let audioReady = false;
 
 async function initPiano() {
-  if (audioStarted) return;
+  if (audioReady) return;
 
   await Tone.start();
 
@@ -17,7 +17,7 @@ async function initPiano() {
     release: 1,
   }).toDestination();
 
-  audioStarted = true;
+  audioReady = true;
 }
 
 const NOTES = [
@@ -30,19 +30,18 @@ const NOTES = [
 function buildPiano(containerId) {
   const piano = document.getElementById(containerId);
   piano.innerHTML = "";
-  piano.className = "piano";
 
+  const whiteWidth = 60;
   let whiteIndex = 0;
 
   NOTES.forEach((note) => {
     const isBlack = note.includes("#");
-
     const key = document.createElement("div");
     key.dataset.note = note;
 
     if (isBlack) {
       key.className = "black-key";
-      key.style.left = (whiteIndex * 60 - 20) + "px";
+      key.style.left = (whiteIndex * whiteWidth - 19) + "px";
     } else {
       key.className = "white-key";
       whiteIndex++;
