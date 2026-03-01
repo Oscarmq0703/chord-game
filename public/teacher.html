@@ -1,30 +1,14 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html>
 <head>
-<meta charset="UTF-8" />
-<title>教师控制台</title>
-<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-<script src="teacher.js" defer></script>
-<style>
-body { font-family: Arial; text-align:center; }
-#qrcode { margin:20px; }
-.stat { font-size:22px; margin:10px; }
-</style>
+<link rel="stylesheet" href="styles.css">
 </head>
-
 <body>
-<h1>🧑‍🏫 教师控制台</h1>
+<h1>教师控制台</h1>
 
-<h2>房间号：<span id="roomId"></span></h2>
+<p>在线人数：<span id="students">0</span></p>
+<p>正确率：<span id="accuracy">0%</span></p>
 
-<div id="qrcode"></div>
-
-<div class="stat">答题数：<span id="total">0</span></div>
-<div class="stat">正确数：<span id="correct">0</span></div>
-
-<h2>🧠 AI评价</h2>
-<div id="evaluation"></div>
-
-<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+<script src="teacher.js"></script>
 </body>
 </html>

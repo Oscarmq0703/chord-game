@@ -1,29 +1,24 @@
-.piano {
-  position: relative;
-  display: flex;
-  height: 220px;
-  user-select: none;
+body {
+  text-align: center;
+  font-family: Arial;
 }
 
-/* 白键 */
+.piano {
+  display: flex;
+  justify-content: center;
+  margin: 20px;
+}
 
 .white-key {
   width: 60px;
-  height: 220px;
+  height: 200px;
+  border: 1px solid black;
   background: white;
-  border: 1px solid #333;
-  position: relative;
-  z-index: 1;
+  margin: 2px;
+  line-height: 180px;
+  cursor: pointer;
 }
 
-/* 黑键（悬浮）⭐ */
-
-.black-key {
-  width: 40px;
-  height: 130px;
-  background: black;
-  position: absolute;
-  top: 0;
-  z-index: 2;
-  margin-left: -20px;
+.white-key:active {
+  background: #ddd;
 }

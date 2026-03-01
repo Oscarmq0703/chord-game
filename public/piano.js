@@ -1,32 +1,26 @@
-// piano.js — Classroom Pro v2
+const AudioContext =
+  window.AudioContext || window.webkitAudioContext
+const ctx = new AudioContext()
 
-let sampler
-let audioReady = false
+function playNote(freq) {
+  const osc = ctx.createOscillator()
+  const gain = ctx.createGain()
 
-async function initPiano() {
-  if (audioReady) return
+  osc.frequency.value = freq
+  osc.type = "sine"
 
-  await Tone.start()
+  osc.connect(gain)
+  gain.connect(ctx.destination)
 
-  sampler = new Tone.Sampler({
-    urls: {
-      C4: "C4.mp3",
-      D#4: "Ds4.mp3",
-      F#4: "Fs4.mp3",
-      A4: "A4.mp3",
-    },
-    release: 1,
-    baseUrl: "https://tonejs.github.io/audio/salamander/",
-  }).toDestination()
+  osc.start()
 
-  audioReady = true
-  console.log("🎹 Piano ready")
+  gain.gain.setValueAtTime(0.3, ctx.currentTime)
+  gain.gain.exponentialRampToValueAtTime(
+    0.001,
+    ctx.currentTime + 1
+  )
+
+  osc.stop(ctx.currentTime + 1)
 }
 
-function playNote(note) {
-  if (!sampler) return
-  sampler.triggerAttackRelease(note, "8n")
-}
-
-window.initPiano = initPiano
 window.playNote = playNote

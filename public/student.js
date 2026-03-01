@@ -1,91 +1,66 @@
-// ⭐ Classroom Pro v2 — Student
-
 const socket = new WebSocket(
   location.origin.replace(/^http/, "ws")
 )
 
 const studentId =
-  "stu_" + Math.random().toString(36).slice(2, 8)
-
-let correctCount = 0
-let totalCount = 0
+  "stu_" + Math.random().toString(36).slice(2)
 
 socket.onopen = () => {
-  console.log("🧑‍🎓 student connected")
-
   socket.send(
-    JSON.stringify({
-      type: "join",
-      id: studentId,
-    })
+    JSON.stringify({ type: "join", id: studentId })
   )
 }
 
-// 🎹 点击琴键
+const notes = {
+  C: 261.63,
+  D: 293.66,
+  E: 329.63,
+  F: 349.23,
+  G: 392.0,
+  A: 440.0,
+  B: 493.88,
+}
 
-document.addEventListener("click", async (e) => {
-  const key = e.target.dataset.note
-  if (!key) return
+let target = randomChord()
+let selected = []
 
-  await initPiano()
-  playNote(key)
+function randomChord() {
+  const keys = Object.keys(notes)
+  return keys[Math.floor(Math.random() * keys.length)]
+}
 
-  // ⭐ 模拟判题（你后面可换成真实逻辑）
+function buildPiano() {
+  const piano = document.getElementById("piano")
+  Object.keys(notes).forEach((n) => {
+    const key = document.createElement("div")
+    key.className = "white-key"
+    key.innerText = n
+    key.onclick = () => press(n)
+    piano.appendChild(key)
+  })
+}
 
-  const correct = Math.random() > 0.4
+function press(note) {
+  playNote(notes[note])
+  selected.push(note)
 
-  totalCount++
-  if (correct) correctCount++
+  if (selected.length === 1) {
+    const correct = selected[0] === target
 
-  // 发给老师
+    socket.send(
+      JSON.stringify({
+        type: "answer",
+        id: studentId,
+        correct,
+      })
+    )
 
-  socket.send(
-    JSON.stringify({
-      type: "answer",
-      id: studentId,
-      correct,
-    })
-  )
+    document.getElementById("progress").innerText =
+      correct ? "正确！" : "错误"
 
-  updateProgress()
-
-  // ⭐ 每 10 题 AI 反馈
-
-  if (totalCount % 10 === 0) {
-    showAIReport()
+    selected = []
+    target = randomChord()
   }
-})
-
-// 📊 更新进度
-
-function updateProgress() {
-  const el = document.getElementById("progress")
-  if (!el) return
-
-  el.innerText =
-    `已完成 ${totalCount} 题｜正确 ${correctCount}`
 }
 
-// 🤖 离线 AI 评价（增强版）
-
-function showAIReport() {
-  const rate = correctCount / totalCount
-
-  let level = ""
-  let advice = ""
-
-  if (rate > 0.85) {
-    level = "🎖️ 和弦大师"
-    advice = "尝试加入转位与快速识别训练。"
-  } else if (rate > 0.6) {
-    level = "👍 良好水平"
-    advice = "重点练习属七和弦与半减七。"
-  } else {
-    level = "📚 需要加强"
-    advice = "建议回到三和弦分解练习。"
-  }
-
-  alert(
-    `AI学习报告\n\n正确率：${Math.round(rate * 100)}%\n等级：${level}\n建议：${advice}`
-  )
-}
+buildPiano()
