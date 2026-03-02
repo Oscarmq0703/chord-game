@@ -1,8 +1,8 @@
-(f(function () {
+(function () {
   const wsUrl = location.origin.replace(/^http/, "ws");
   const socket = new WebSocket(wsUrl);
 
-  // ===== 设备级唯一ID（你之前已修复重复计数，这里保留）=====
+  // ===== 设备级唯一ID（你说重复计数已修好，这里继续沿用）=====
   let studentId = localStorage.getItem("studentId");
   if (!studentId) {
     studentId = "stu_" + Math.random().toString(36).slice(2, 10);
@@ -27,7 +27,50 @@
   const savedName = localStorage.getItem("studentName") || "";
   if (elNameInput) elNameInput.value = savedName;
 
-  // ===== 题库（先用目标音符，稳定可用；后续再升级和弦题库）=====
+  // ========= WebSocket 消息队列（关键修复点）=========
+  const pending = [];
+  function sendOrQueue(obj) {
+    const payload = JSON.stringify(obj);
+    if (socket.readyState === WebSocket.OPEN) {
+      socket.send(payload);
+    } else {
+      pending.push(payload);
+    }
+  }
+  function flushQueue() {
+    while (pending.length && socket.readyState === WebSocket.OPEN) {
+      socket.send(pending.shift());
+    }
+  }
+
+  function getName() {
+    return (elNameInput?.value || "").trim().slice(0, 20);
+  }
+
+  function joinWithName() {
+    const name = getName();
+    // 允许空名 join，但会显示“未命名”
+    sendOrQueue({ type: "join", id: studentId, name });
+  }
+
+  function updateNameToServer() {
+    const name = getName();
+    if (!name) {
+      alert("请先输入姓名");
+      return;
+    }
+    localStorage.setItem("studentName", name);
+    sendOrQueue({ type: "set_name", id: studentId, name });
+    if (elAI) elAI.textContent = "✅ 已提交姓名（教师端会显示你的名字）。";
+  }
+
+  // 点击“确定”
+  elNameBtn?.addEventListener("click", updateNameToServer);
+  elNameInput?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") updateNameToServer();
+  });
+
+  // ===== 题库（先保持稳定：目标音符）=====
   const NOTE_POOL = [
     "C4","C#4","D4","D#4","E4","F4","F#4","G4","G#4","A4","A#4","B4",
     "C5","C#5","D5","D#5","E5","F5","F#5","G5","G#5","A5","A#5","B5"
@@ -39,6 +82,7 @@
 
   function nextQuestion() {
     targetNote = NOTE_POOL[Math.floor(Math.random() * NOTE_POOL.length)];
+    // 展示用 ♯，内部判定仍用 #
     setText(elQ, targetNote.replace("#", "♯"));
   }
 
@@ -50,89 +94,48 @@
 
   function offlineAIAdvice() {
     const rate = totalCount === 0 ? 0 : correctCount / totalCount;
-    if (rate >= 0.85) {
-      return "🎖️ 表现优秀：尝试加入“黑键定位”专项训练（先读音名→再找键位）。";
-    }
-    if (rate >= 0.65) {
-      return "👍 进步明显：建议慢练 + 口头报音名，再下键，减少♯音误触。";
-    }
-    return "📚 建议巩固：先练白键定位，再逐步加入黑键（C#、D#、F#、G#、A#）。";
+    if (rate >= 0.85) return "🎖️ 很棒：尝试加入黑键定位专项（先报音名再下键）。";
+    if (rate >= 0.65) return "👍 稳定进步：注意♯音易误触，建议慢练 + 口头报音名。";
+    return "📚 建议巩固：先练白键定位，再逐步加入 C#/D#/F#/G#/A#。";
   }
 
-  function getName() {
-    return (elNameInput?.value || "").trim().slice(0, 20);
-  }
-
-  function sendJoinOrUpdateName(type) {
-    const name = getName();
-    if (name) {
-      localStorage.setItem("studentName", name);
-    }
-    if (socket.readyState !== WebSocket.OPEN) return;
-
-    if (type === "join") {
-      socket.send(JSON.stringify({ type: "join", id: studentId, name }));
-    } else {
-      socket.send(JSON.stringify({ type: "set_name", id: studentId, name }));
-    }
-  }
-
-  // 点击“确定”：更新姓名到老师端
-  elNameBtn?.addEventListener("click", () => {
-    const name = getName();
-    if (!name) {
-      alert("请先输入姓名");
-      return;
-    }
-    sendJoinOrUpdateName("set_name");
-    if (elAI) elAI.textContent = "✅ 姓名已保存，可以开始作答。";
-  });
-
-  // Enter 提交
-  elNameInput?.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") elNameBtn?.click();
-  });
-
+  // WebSocket 生命周期
   socket.onopen = () => {
     console.log("student ws connected");
-    // join（带姓名）
-    sendJoinOrUpdateName("join");
+    joinWithName();      // ✅ 一定 join
+    flushQueue();        // ✅ 补发 queued 消息
     nextQuestion();
     updateProgress();
+    if (elAI) elAI.textContent = "已连接课堂。可先输入姓名，再开始作答。";
   };
 
-  socket.onerror = (e) => console.error("student ws error", e);
+  socket.onclose = () => {
+    console.log("student ws closed");
+    if (elAI) elAI.textContent = "连接已断开（可刷新重连）。";
+  };
+
+  socket.onerror = (e) => {
+    console.error("student ws error", e);
+    if (elAI) elAI.textContent = "网络异常（可刷新重连）。";
+  };
 
   // 监听键盘点击事件
   document.addEventListener("notePlayed", (e) => {
     const played = e.detail; // e.g. C#4
-
-    const correct = played === targetNote;
+    const isCorrect = played === targetNote;
 
     totalCount++;
-    if (correct) correctCount++;
+    if (isCorrect) correctCount++;
 
     updateProgress();
 
-    // 每题提示 + 每10题总结
     if (elAI) {
-      if (totalCount % 10 === 0) {
-        elAI.textContent = offlineAIAdvice();
-      } else {
-        elAI.textContent = correct ? "✅ 本题正确！" : "❌ 不对，注意目标音名与键位。";
-      }
+      if (totalCount % 10 === 0) elAI.textContent = offlineAIAdvice();
+      else elAI.textContent = isCorrect ? "✅ 本题正确！" : "❌ 不对，注意目标音名与键位。";
     }
 
-    // 回传教师端统计
-    if (socket.readyState === WebSocket.OPEN) {
-      socket.send(
-        JSON.stringify({
-          type: "answer",
-          id: studentId,
-          correct,
-        })
-      );
-    }
+    // 回传教师端统计（✅ 若 ws 未连上也会排队）
+    sendOrQueue({ type: "answer", id: studentId, correct: isCorrect });
 
     nextQuestion();
   });
