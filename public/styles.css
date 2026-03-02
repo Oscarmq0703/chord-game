@@ -390,3 +390,43 @@ a{ color: inherit; text-decoration:none; }
 @media (orientation: landscape) and (max-height: 420px){
   .studentQuestionCard .noteT{ font-size: 36px; }
 }
+
+/* ===== Question card: note left, progress+AI right (landscape friendly) ===== */
+.qCard{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 12px;
+}
+
+.qLeft{ min-width: 180px; }
+.qRight{
+  flex: 1 1 auto;
+  min-width: 220px;
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap: 10px;
+}
+
+.qAi{
+  text-align:right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 横屏更紧凑：让题目卡更扁，键盘更大 */
+@media (orientation: landscape){
+  .qCard{ padding: 6px 10px !important; }
+  .qRight{ gap: 8px; }
+  .qBadge{ padding: 6px 10px; }
+  .qAi{ font-size: 13px; }
+}
+
+/* 竖屏时：右侧内容换行到下面，避免挤压 */
+@media (orientation: portrait){
+  .qCard{ flex-direction: column; align-items:flex-start; }
+  .qRight{ width:100%; justify-content:flex-start; flex-wrap:wrap; }
+  .qAi{ text-align:left; white-space: normal; overflow: visible; }
+}

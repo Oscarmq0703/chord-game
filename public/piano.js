@@ -1,21 +1,12 @@
 // public/piano.js — Real 2-octave keyboard layout (C4–B5)
-// Generates white keys in a row + black keys floating above at correct positions.
+// Fix: re-position black keys on resize/orientationchange (mobile landscape)
 
 (function () {
-  // Two octaves: C4..B5
   const WHITE_NOTES = [
     "C4","D4","E4","F4","G4","A4","B4",
     "C5","D5","E5","F5","G5","A5","B5"
   ];
 
-  // Black keys mapped to the "gap after which white key" (index in WHITE_NOTES)
-  // C# is between C and D -> after C (whiteIndex 0)
-  // D# between D and E -> after D (1)
-  // no black between E-F
-  // F# after F (3)
-  // G# after G (4)
-  // A# after A (5)
-  // no black between B-C
   const BLACK_KEYS = [
     { note: "C#4", afterWhite: 0 },
     { note: "D#4", afterWhite: 1 },
@@ -30,15 +21,46 @@
     { note: "A#5", afterWhite: 12 },
   ];
 
+  let currentRoot = null;
+  let resizeTimer = null;
+
+  function positionBlackKeys() {
+    if (!currentRoot) return;
+
+    const whiteRow = currentRoot.querySelector(".piano-white-row");
+    const blackLayer = currentRoot.querySelector(".piano-black-layer");
+    if (!whiteRow || !blackLayer) return;
+
+    const firstWhite = whiteRow.querySelector(".white-key");
+    if (!firstWhite) return;
+
+    const whiteW = firstWhite.getBoundingClientRect().width;
+
+    // 取实际黑键宽度（从CSS），避免写死
+    let blackW = 36;
+    const anyBlack = blackLayer.querySelector(".black-key");
+    if (anyBlack) blackW = anyBlack.getBoundingClientRect().width;
+
+    blackLayer.querySelectorAll(".black-key").forEach((k) => {
+      const afterWhite = Number(k.dataset.afterWhite);
+      const left = (afterWhite + 1) * whiteW - blackW / 2;
+      k.style.left = `${left}px`;
+    });
+  }
+
+  function debounceReposition() {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(positionBlackKeys, 60);
+  }
+
   function buildPiano(containerId) {
     const root = document.getElementById(containerId);
     if (!root) return;
 
-    // Clean
+    currentRoot = root;
     root.innerHTML = "";
     root.classList.add("piano");
 
-    // Create layers
     const whiteRow = document.createElement("div");
     whiteRow.className = "piano-white-row";
 
@@ -48,7 +70,7 @@
     root.appendChild(whiteRow);
     root.appendChild(blackLayer);
 
-    // Render white keys
+    // Whites
     WHITE_NOTES.forEach((note) => {
       const k = document.createElement("button");
       k.type = "button";
@@ -56,7 +78,6 @@
       k.dataset.note = note;
       k.title = note;
 
-      // Click emits notePlayed event (student.js listens to it)
       k.addEventListener("click", () => {
         document.dispatchEvent(new CustomEvent("notePlayed", { detail: note }));
       });
@@ -64,32 +85,35 @@
       whiteRow.appendChild(k);
     });
 
-    // Compute sizes from CSS (so layout stays responsive)
-    // fallback values if not measurable yet
-    const whiteW = whiteRow.querySelector(".white-key")?.getBoundingClientRect().width || 56;
-    const blackW = 36;
-
-    // Render black keys (absolute positioning)
+    // Blacks
     BLACK_KEYS.forEach(({ note, afterWhite }) => {
       const k = document.createElement("button");
       k.type = "button";
       k.className = "black-key";
       k.dataset.note = note;
+      k.dataset.afterWhite = String(afterWhite);
       k.title = note;
 
-      // Place black key centered between two whites:
-      // left = (afterWhite + 1) * whiteW - blackW/2
-      const left = (afterWhite + 1) * whiteW - blackW / 2;
-      k.style.left = `${left}px`;
-
       k.addEventListener("click", (ev) => {
-        // Prevent white key click "through"
         ev.stopPropagation();
         document.dispatchEvent(new CustomEvent("notePlayed", { detail: note }));
       });
 
       blackLayer.appendChild(k);
     });
+
+    // ⭐关键：等浏览器完成布局后再定位一次
+    requestAnimationFrame(() => {
+      positionBlackKeys();
+      // 某些手机横屏时需要再来一次
+      setTimeout(positionBlackKeys, 120);
+    });
+
+    // 监听横竖屏/窗口变化，重新定位黑键
+    window.removeEventListener("resize", debounceReposition);
+    window.removeEventListener("orientationchange", debounceReposition);
+    window.addEventListener("resize", debounceReposition);
+    window.addEventListener("orientationchange", debounceReposition);
   }
 
   window.buildPiano = buildPiano;
