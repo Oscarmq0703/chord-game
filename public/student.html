@@ -11,6 +11,7 @@
   <div class="shell">
     <div class="container">
 
+      <!-- 顶部栏 -->
       <div class="topbar">
         <div class="brand">
           <div class="logo">🎓</div>
@@ -22,29 +23,26 @@
         <div class="badge"><span class="dot"></span> 已连接课堂</div>
       </div>
 
-      <!-- ✅ 姓名输入栏（顶部） -->
-      <div class="card pad" style="margin-bottom:12px;">
+      <!-- ✅ 姓名栏：放到“学生答题/已连接课堂”之间（即 topbar 下方） -->
+      <div class="card pad" style="padding:10px 14px; margin-bottom:12px;">
         <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:center;">
           <div style="color:var(--muted); font-weight:700;">姓名</div>
           <input id="nameInput" class="input" placeholder="请输入姓名" />
           <button id="nameBtn" class="btn primary" type="button">确定</button>
-          <div class="p" style="margin-left:6px;">提示：姓名会显示在教师端名单中</div>
+          <div class="p" style="margin-left:6px;">姓名会显示在教师端名单中</div>
         </div>
       </div>
 
       <div class="grid">
-        <!-- 左侧：题目 + 键盘（键盘放在题目卡片下面） -->
+        <!-- 左侧：请弹奏 + 键盘 -->
         <div>
-          <!-- ✅ 缩小后的“请弹奏”卡片 -->
+          <!-- ✅ 更扁的“请弹奏”卡片（去掉进度信息；音名缩小一号） -->
           <div class="card pad" style="padding:10px 14px;">
             <div class="p" style="margin-bottom:2px;">请弹奏</div>
-            <div style="font-size:56px; font-weight:900; letter-spacing:.5px;" id="questionText">--</div>
-            <div style="margin-top:10px;">
-              <div class="badge">进度：<b id="progressText" style="color:var(--text)">完成 0 ｜ 正确 0</b></div>
-            </div>
+            <div id="questionText" style="font-size:48px; font-weight:900; letter-spacing:.5px;">--</div>
           </div>
 
-          <!-- ✅ 键盘在题目卡片下面（不放在 card 里，避免裁剪） -->
+          <!-- 键盘在卡片下面 -->
           <div class="pianoFull" style="margin-top:12px;">
             <div id="piano" class="piano"></div>
           </div>
@@ -52,10 +50,14 @@
           <div class="footer">若无声音：先点击任意琴键一次即可。</div>
         </div>
 
-        <!-- 右侧：AI 建议（保留） -->
+        <!-- 右侧：进度 + AI 建议（保留） -->
         <div class="card pad">
-          <h2 class="h2">AI 学习建议</h2>
-          <p class="p">每 10 题更新一次点评与练习建议。</p>
+          <h2 class="h2">学习面板</h2>
+          <p class="p">进度实时更新；每 10 题刷新一次建议。</p>
+
+          <div style="margin-top:12px;">
+            <div class="badge">进度：<b id="progressText" style="color:var(--text)">完成 0 ｜ 正确 0</b></div>
+          </div>
 
           <div class="kpiRow">
             <div class="kpi">
@@ -69,7 +71,7 @@
           </div>
 
           <div class="kpi" style="margin-top:12px;">
-            <p class="label">当前提示</p>
+            <p class="label">AI 学习建议</p>
             <p id="aiHint" style="margin:0;line-height:1.6;color:var(--text);">
               请输入姓名后开始作答。
             </p>
