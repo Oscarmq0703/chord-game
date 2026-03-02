@@ -8,74 +8,55 @@
 </head>
 
 <body>
-  <div class="shell">
-    <div class="container">
+  <div class="studentShell">
+    <div class="studentContainer">
 
       <!-- 顶部栏 -->
-      <div class="topbar">
+      <div class="topbar studentTopbar">
         <div class="brand">
           <div class="logo">🎓</div>
           <div>
             <div class="brandTitle">学生答题</div>
-            <div class="brandSub">Classroom Pro · 建议横屏</div>
+            <div class="brandSub">Classroom Pro · 横屏推荐</div>
           </div>
         </div>
         <div class="badge"><span class="dot"></span> 已连接课堂</div>
       </div>
 
-      <!-- ✅ 姓名栏：放到“学生答题/已连接课堂”之间（即 topbar 下方） -->
-      <div class="card pad" style="padding:10px 14px; margin-bottom:12px;">
+      <!-- 姓名栏 -->
+      <div class="card pad studentNameBar">
         <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:center;">
           <div style="color:var(--muted); font-weight:700;">姓名</div>
           <input id="nameInput" class="input" placeholder="请输入姓名" />
           <button id="nameBtn" class="btn primary" type="button">确定</button>
-          <div class="p" style="margin-left:6px;">姓名会显示在教师端名单中</div>
+          <div class="p" style="margin-left:6px;">姓名会显示在教师端</div>
         </div>
       </div>
 
-      <div class="grid">
-        <!-- 左侧：请弹奏 + 键盘 -->
-        <div>
-          <!-- ✅ 更扁的“请弹奏”卡片（去掉进度信息；音名缩小一号） -->
-          <div class="card pad" style="padding:10px 14px;">
-            <div class="p" style="margin-bottom:2px;">请弹奏</div>
-            <div id="questionText" style="font-size:48px; font-weight:900; letter-spacing:.5px;">--</div>
-          </div>
+      <!-- 题目卡（更扁） -->
+      <div class="card pad studentQuestionCard">
+        <div class="p labelT">请弹奏</div>
+        <div id="questionText" class="noteT">--</div>
 
-          <!-- 键盘在卡片下面 -->
-          <div class="pianoFull" style="margin-top:12px;">
-            <div id="piano" class="piano"></div>
+        <!-- 进度 + AI 建议：压成一行，省空间 -->
+        <div style="margin-top:6px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+          <div class="badge">进度：<b id="progressText" style="color:var(--text)">完成 0 ｜ 正确 0</b></div>
+          <div class="p" id="aiHint" style="flex:1; min-width:220px;">
+            请输入姓名后开始作答。
           </div>
-
-          <div class="footer">若无声音：先点击任意琴键一次即可。</div>
         </div>
 
-        <!-- 右侧：进度 + AI 建议（保留） -->
-        <div class="card pad">
-          <h2 class="h2">学习面板</h2>
-          <p class="p">进度实时更新；每 10 题刷新一次建议。</p>
+        <!-- 仍保留两个数字（给 student.js 更新用），但不占视觉空间 -->
+        <div style="display:none">
+          <span id="correctNum">0</span>
+          <span id="totalNum">0</span>
+        </div>
+      </div>
 
-          <div style="margin-top:12px;">
-            <div class="badge">进度：<b id="progressText" style="color:var(--text)">完成 0 ｜ 正确 0</b></div>
-          </div>
-
-          <div class="kpiRow">
-            <div class="kpi">
-              <p class="label">本次正确</p>
-              <p class="value" id="correctNum">0</p>
-            </div>
-            <div class="kpi">
-              <p class="label">本次完成</p>
-              <p class="value" id="totalNum">0</p>
-            </div>
-          </div>
-
-          <div class="kpi" style="margin-top:12px;">
-            <p class="label">AI 学习建议</p>
-            <p id="aiHint" style="margin:0;line-height:1.6;color:var(--text);">
-              请输入姓名后开始作答。
-            </p>
-          </div>
+      <!-- 键盘：占满剩余高度 -->
+      <div class="studentStage">
+        <div class="studentPianoWrap">
+          <div id="piano" class="piano"></div>
         </div>
       </div>
 
@@ -84,9 +65,8 @@
 
   <script src="piano.js"></script>
   <script src="student.js"></script>
-
   <script>
-    // ✅ 无论 student.js 是否出错，键盘都必须渲染
+    // 键盘必须渲染
     window.addEventListener("DOMContentLoaded", () => {
       if (typeof window.buildPiano === "function") {
         window.buildPiano("piano");

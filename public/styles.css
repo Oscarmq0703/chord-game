@@ -303,3 +303,90 @@ a{ color: inherit; text-decoration:none; }
   border-color: rgba(79,140,255,.55);
   box-shadow: 0 0 0 4px rgba(79,140,255,.14);
 }
+
+/* ===== Student Fullscreen Layout (no scroll in landscape) ===== */
+.studentShell{
+  min-height: 100vh;
+  display:flex;
+  justify-content:center;
+  padding: 12px;
+}
+
+.studentContainer{
+  width: min(1040px, 100%);
+  height: calc(100vh - 24px);
+  display:flex;
+  flex-direction:column;
+  gap: 8px;
+}
+
+.studentTopbar{
+  margin-bottom: 0; /* 覆盖原 topbar 的下边距 */
+}
+
+.studentNameBar{
+  padding: 8px 12px !important;
+}
+
+.studentQuestionCard{
+  padding: 8px 12px !important;
+}
+
+.studentQuestionCard .labelT{
+  margin-bottom: 2px;
+}
+
+.studentQuestionCard .noteT{
+  font-size: 44px; /* 默认竖屏/桌面 */
+  font-weight: 900;
+  letter-spacing: .5px;
+  line-height: 1.05;
+}
+
+.studentStage{
+  flex: 1 1 auto;           /* 键盘区域吃掉剩余高度 */
+  min-height: 0;            /* 允许内部元素收缩，避免撑出导致滚动 */
+  display:flex;
+}
+
+.studentPianoWrap{
+  flex: 1 1 auto;
+  min-height: 0;
+  display:flex;
+}
+
+.studentPianoWrap .piano{
+  width: 100%;
+  height: 100%;             /* 关键：键盘占满剩余空间 */
+  max-width: none;
+}
+
+/* 横屏：进一步压缩顶部，让键盘更大 */
+@media (orientation: landscape){
+  .studentShell{ padding: 10px; }
+  .studentContainer{ height: calc(100vh - 20px); gap: 6px; }
+
+  .studentNameBar{ padding: 6px 10px !important; }
+  .studentQuestionCard{ padding: 6px 10px !important; }
+
+  .studentQuestionCard .noteT{ font-size: 40px; } /* 音名略小一点，保证不溢出 */
+
+  /* 输入更紧凑 */
+  .studentNameBar .input{
+    height: 36px;
+    min-width: 180px;
+  }
+  .studentNameBar .btn{
+    padding: 10px 12px;
+  }
+
+  /* 让键盘更像“占满屏” */
+  .studentPianoWrap .piano{
+    border-radius: 16px;
+  }
+}
+
+/* 超小屏横屏（例如 640x360）再压一点 */
+@media (orientation: landscape) and (max-height: 420px){
+  .studentQuestionCard .noteT{ font-size: 36px; }
+}
