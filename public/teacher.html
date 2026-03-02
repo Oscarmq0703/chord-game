@@ -18,7 +18,7 @@
             <div class="brandSub">Classroom Pro · 实时统计</div>
           </div>
         </div>
-        <a class="btn ghost" href="index.html">← 返回首页</a>
+        <div class="badge"><span class="dot"></span> 已连接课堂</div>
       </div>
 
       <div class="grid">
@@ -37,31 +37,19 @@
             </div>
           </div>
 
-          <div style="margin-top:14px;">
-            <div class="badge">房间号：<b id="roomText" style="color:var(--text)">…</b></div>
-          </div>
-
           <div class="footer">学生每次作答都会更新统计。</div>
         </div>
 
         <div class="card pad">
-          <h2 class="h2">AI 反馈</h2>
-          <p class="p">每 10 题更新一次学习点评与练习建议。</p>
+          <h2 class="h2">在线学生名单</h2>
+          <p class="p">显示姓名 + 完成/正确（姓名由学生端提交）。</p>
 
-          <div class="kpi" style="margin-top:12px;">
-            <p class="label">当前反馈</p>
-            <p id="aiText" style="margin:0;line-height:1.6;color:var(--text);">等待学生答题中…</p>
-          </div>
+          <div id="roster" style="margin-top:12px; display:flex; flex-direction:column; gap:10px;"></div>
         </div>
       </div>
     </div>
   </div>
 
   <script src="teacher.js"></script>
-  <script>
-    const p = new URLSearchParams(location.search);
-    const room = p.get("room") || localStorage.getItem("CLASSROOM_ROOM") || "—";
-    document.getElementById("roomText").textContent = room;
-  </script>
 </body>
 </html>
