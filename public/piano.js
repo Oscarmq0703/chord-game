@@ -1,5 +1,5 @@
-// public/piano.js — Real 2-octave keyboard layout (C4–B5)
-// Fix: re-position black keys on resize/orientationchange (mobile landscape)
+// public/piano.js — Real 2-octave layout (C4–B5)
+// Fix: position black keys using actual white key DOM positions (no drift on landscape)
 
 (function () {
   const WHITE_NOTES = [
@@ -7,6 +7,7 @@
     "C5","D5","E5","F5","G5","A5","B5"
   ];
 
+  // black between white[afterWhite] and white[afterWhite+1]
   const BLACK_KEYS = [
     { note: "C#4", afterWhite: 0 },
     { note: "D#4", afterWhite: 1 },
@@ -22,7 +23,7 @@
   ];
 
   let currentRoot = null;
-  let resizeTimer = null;
+  let raf = 0;
 
   function positionBlackKeys() {
     if (!currentRoot) return;
@@ -31,26 +32,35 @@
     const blackLayer = currentRoot.querySelector(".piano-black-layer");
     if (!whiteRow || !blackLayer) return;
 
-    const firstWhite = whiteRow.querySelector(".white-key");
-    if (!firstWhite) return;
+    const whites = Array.from(whiteRow.querySelectorAll(".white-key"));
+    if (whites.length < 2) return;
 
-    const whiteW = firstWhite.getBoundingClientRect().width;
-
-    // 取实际黑键宽度（从CSS），避免写死
-    let blackW = 36;
-    const anyBlack = blackLayer.querySelector(".black-key");
-    if (anyBlack) blackW = anyBlack.getBoundingClientRect().width;
+    const rootRect = currentRoot.getBoundingClientRect();
 
     blackLayer.querySelectorAll(".black-key").forEach((k) => {
       const afterWhite = Number(k.dataset.afterWhite);
-      const left = (afterWhite + 1) * whiteW - blackW / 2;
+      const leftWhite = whites[afterWhite];
+      const rightWhite = whites[afterWhite + 1];
+      if (!leftWhite || !rightWhite) return;
+
+      const lw = leftWhite.getBoundingClientRect();
+      const rw = rightWhite.getBoundingClientRect();
+      const kw = k.getBoundingClientRect();
+
+      const center = (lw.right + rw.left) / 2;      // 两白键之间的中点（屏幕坐标）
+      const left = center - rootRect.left - kw.width / 2; // 转为相对 piano 的坐标
+
       k.style.left = `${left}px`;
     });
   }
 
-  function debounceReposition() {
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(positionBlackKeys, 60);
+  function schedulePosition() {
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(() => {
+      positionBlackKeys();
+      // 某些手机横屏地址栏收起会二次变化，再补一次
+      setTimeout(positionBlackKeys, 120);
+    });
   }
 
   function buildPiano(containerId) {
@@ -70,7 +80,7 @@
     root.appendChild(whiteRow);
     root.appendChild(blackLayer);
 
-    // Whites
+    // whites
     WHITE_NOTES.forEach((note) => {
       const k = document.createElement("button");
       k.type = "button";
@@ -85,7 +95,7 @@
       whiteRow.appendChild(k);
     });
 
-    // Blacks
+    // blacks
     BLACK_KEYS.forEach(({ note, afterWhite }) => {
       const k = document.createElement("button");
       k.type = "button";
@@ -102,18 +112,15 @@
       blackLayer.appendChild(k);
     });
 
-    // ⭐关键：等浏览器完成布局后再定位一次
-    requestAnimationFrame(() => {
-      positionBlackKeys();
-      // 某些手机横屏时需要再来一次
-      setTimeout(positionBlackKeys, 120);
-    });
+    schedulePosition();
 
-    // 监听横竖屏/窗口变化，重新定位黑键
-    window.removeEventListener("resize", debounceReposition);
-    window.removeEventListener("orientationchange", debounceReposition);
-    window.addEventListener("resize", debounceReposition);
-    window.addEventListener("orientationchange", debounceReposition);
+    // 监听各种会改变布局的事件
+    window.addEventListener("resize", schedulePosition);
+    window.addEventListener("orientationchange", schedulePosition);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", schedulePosition);
+      window.visualViewport.addEventListener("scroll", schedulePosition);
+    }
   }
 
   window.buildPiano = buildPiano;
