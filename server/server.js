@@ -4,143 +4,106 @@ const WebSocket = require("ws");
 const path = require("path");
 
 const app = express();
-const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
 
+// 静态资源（public）
 app.use(express.static(path.join(__dirname, "../public")));
+
+// 首页（你可以按需改成 index.html）
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "../public/index.html"));
 });
 
-let teacher = null;
+// Render 健康检查（可选但推荐）
+app.get("/health", (req, res) => res.status(200).send("OK"));
 
-/**
- * students[id] = {
- *   ws,
- *   name,
- *   correct,
- *   total,
- *   lastSeen
- * }
- */
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server });
+
+// ====== 下面是你原来的 ws 逻辑（保留即可） ======
+let teacher = null;
 const students = Object.create(null);
 
 function safeName(x) {
-  const s = String(x ?? "").trim();
-  // 简单防护：去掉尖括号，避免插入 HTML
-  return s.replace(/[<>]/g, "").slice(0, 20);
+  return String(x ?? "").trim().replace(/[<>]/g, "").slice(0, 20);
 }
 
 function sendStats() {
   if (!teacher || teacher.readyState !== WebSocket.OPEN) return;
 
   const ids = Object.keys(students);
-  const studentCount = ids.length;
-
-  let totalAnswers = 0;
-  let totalCorrect = 0;
+  let totalAnswers = 0, totalCorrect = 0;
 
   const roster = ids.map((id) => {
     const s = students[id];
     totalAnswers += s.total;
     totalCorrect += s.correct;
-    return {
-      id,
-      name: s.name || "未命名",
-      correct: s.correct,
-      total: s.total,
-    };
+    return { id, name: s.name || "未命名", correct: s.correct, total: s.total };
   });
 
-  roster.sort((a, b) => (b.total - a.total) || (b.correct - a.correct));
+  const accuracy = totalAnswers === 0 ? 0 : Math.round((totalCorrect / totalAnswers) * 100);
 
-  const accuracy =
-    totalAnswers === 0 ? 0 : Math.round((totalCorrect / totalAnswers) * 100);
-
-  teacher.send(
-    JSON.stringify({
-      type: "stats",
-      students: studentCount,
-      accuracy,
-      roster,
-    })
-  );
+  teacher.send(JSON.stringify({
+    type: "stats",
+    students: ids.length,
+    accuracy,
+    roster
+  }));
 }
 
 function upsertStudent(id, ws) {
-  if (!students[id]) {
-    students[id] = { ws, name: "", correct: 0, total: 0, lastSeen: Date.now() };
-  } else {
-    students[id].ws = ws;
-    students[id].lastSeen = Date.now();
-  }
+  if (!students[id]) students[id] = { ws, name: "", correct: 0, total: 0 };
+  students[id].ws = ws;
 }
 
 wss.on("connection", (ws) => {
   ws.on("message", (msg) => {
     let data;
-    try {
-      data = JSON.parse(msg);
-    } catch {
-      return;
-    }
+    try { data = JSON.parse(msg); } catch { return; }
 
-    // 教师端上线
     if (data.type === "teacher") {
       teacher = ws;
       sendStats();
       return;
     }
 
-    // 学生加入
     if (data.type === "join") {
       const id = String(data.id || "").trim();
       if (!id) return;
-
       upsertStudent(id, ws);
       if (data.name) students[id].name = safeName(data.name);
-
       sendStats();
       return;
     }
 
-    // 学生设置/更新姓名
     if (data.type === "set_name") {
       const id = String(data.id || "").trim();
       if (!id || !students[id]) return;
-
       students[id].name = safeName(data.name);
       sendStats();
       return;
     }
 
-    // 学生答题
     if (data.type === "answer") {
       const id = String(data.id || "").trim();
       if (!id || !students[id]) return;
-
       students[id].total += 1;
       if (data.correct) students[id].correct += 1;
-      students[id].lastSeen = Date.now();
-
       sendStats();
       return;
     }
   });
 
   ws.on("close", () => {
-    // 关闭时移除对应学生（通过 ws 匹配）
     for (const id of Object.keys(students)) {
-      if (students[id].ws === ws) {
-        delete students[id];
-      }
+      if (students[id].ws === ws) delete students[id];
     }
     if (teacher === ws) teacher = null;
     sendStats();
   });
 });
 
+// ✅ Render 必须绑定这个 PORT
 const PORT = process.env.PORT || 10000;
-server.listen(PORT, () => {
-  console.log("🚀 Server running on", PORT);
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`🚀 Listening on ${PORT}`);
 });
