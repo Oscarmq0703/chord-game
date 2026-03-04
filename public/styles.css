@@ -699,10 +699,13 @@ a{ color: inherit; text-decoration:none; }
 .aiText2{
   color: var(--text);
   font-size: 13px;
-  white-space: nowrap;
+  line-height: 1.35;
+
+  display: -webkit-box;
+  -webkit-line-clamp: 2;   /* 固定两行 */
+  -webkit-box-orient: vertical;
+
   overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 520px;
 }
 
 /* 横屏更紧凑 */

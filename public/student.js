@@ -92,12 +92,24 @@
     if (elProg) elProg.textContent = `完成 ${totalCount} ｜ 正确 ${correctCount}`;
   }
 
-  function offlineAIAdvice() {
-    const rate = totalCount === 0 ? 0 : correctCount / totalCount;
-    if (rate >= 0.85) return "🎖️ 很棒：尝试加入黑键定位专项（先报音名再下键）。";
-    if (rate >= 0.65) return "👍 稳定进步：注意♯音易误触，建议慢练 + 口头报音名。";
-    return "📚 建议巩固：先练白键定位，再逐步加入 C#/D#/F#/G#/A#。";
+function offlineAIAdvice() {
+
+  const rate = totalCount === 0 ? 0 : correctCount / totalCount;
+
+  if (rate === 1) {
+    return "正确率100%。音名定位非常稳定，可以开始加入黑键和跨八度训练，并尝试先在脑中听到音名再找到键位。";
   }
+
+  if (rate >= 0.80) {
+    return "正确率较高，键盘定位基本稳定。建议继续加强黑键定位练习，并尝试提高反应速度。";
+  }
+
+  if (rate >= 0.60) {
+    return "正确率中等，说明音名认识基本正确，但定位仍不稳定。建议加强音名到键位的对应练习。";
+  }
+
+  return "正确率较低，建议先巩固钢琴键盘结构。练习白键分组定位，再逐步加入黑键练习。";
+}
 
   // WebSocket 生命周期
   socket.onopen = () => {
