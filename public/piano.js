@@ -1,14 +1,9 @@
-// public/piano.js — Real 2-octave layout (C4–B5) + Real Piano Sampler (Tone.js Salamander)
-// - Black key position uses offsetLeft/offsetWidth (stable in landscape)
-// - Audio: Tone.Sampler, unlocked on first user gesture
-
 (function () {
   const WHITE_NOTES = [
     "C4","D4","E4","F4","G4","A4","B4",
     "C5","D5","E5","F5","G5","A5","B5"
   ];
 
-  // black between white[afterWhite] and white[afterWhite+1]
   const BLACK_KEYS = [
     { note: "C#4", afterWhite: 0 },
     { note: "D#4", afterWhite: 1 },
@@ -26,64 +21,61 @@
   let currentRoot = null;
   let raf = 0;
 
-  // ===== Real piano sampler =====
+  // ===== Audio (Tone Sampler) =====
   let sampler = null;
-  let samplerReady = false;
-  let loadingPromise = null;
+  let audioReady = false;
+  let audioInitPromise = null;
 
-  function ensureToneLoaded() {
-    if (!window.Tone) {
-      console.error("Tone.js not loaded. Make sure student.html includes Tone.js before piano.js");
-      return false;
-    }
-    return true;
+  function canUseTone() {
+    return typeof window.Tone !== "undefined";
   }
 
-  async function initSampler() {
-    if (!ensureToneLoaded()) return;
+  async function initAudio() {
+    if (!canUseTone()) return;
+    if (audioReady) return;
+    if (audioInitPromise) return audioInitPromise;
 
-    if (samplerReady) return;
-    if (loadingPromise) return loadingPromise;
+    audioInitPromise = (async () => {
+      try {
+        // must be called after user gesture; we call initAudio inside click handler
+        await Tone.start();
 
-    loadingPromise = (async () => {
-      // Must be called in/after user gesture
-      await Tone.start();
+        sampler = new Tone.Sampler({
+          urls: {
+            A4: "A4.mp3",
+            C4: "C4.mp3",
+            D#4: "Ds4.mp3",
+            F#4: "Fs4.mp3",
+          },
+          baseUrl: "https://tonejs.github.io/audio/salamander/",
+          release: 1,
+        }).toDestination();
 
-      // Salamander piano (sampled). Using a few base notes; Tone auto-pitches.
-      sampler = new Tone.Sampler({
-        urls: {
-          A4: "A4.mp3",
-          C4: "C4.mp3",
-          D#4: "Ds4.mp3",
-          F#4: "Fs4.mp3",
-        },
-        baseUrl: "https://tonejs.github.io/audio/salamander/",
-        release: 1,
-      }).toDestination();
+        // ✅ 最兼容的加载等待方式
+        await Tone.loaded();
 
-      // Wait for sample loading
-      await sampler.loaded;
-
-      samplerReady = true;
-      console.log("✅ Piano sampler ready");
+        audioReady = true;
+        console.log("✅ Audio ready");
+      } catch (e) {
+        console.error("Audio init failed:", e);
+        // 音频失败也不影响键盘使用
+      }
     })();
 
-    return loadingPromise;
+    return audioInitPromise;
   }
 
   async function playNote(note) {
-    // Avoid hard failure if Tone missing
-    if (!ensureToneLoaded()) return;
-
+    if (!canUseTone()) return;
     try {
-      if (!samplerReady) await initSampler();
+      if (!audioReady) await initAudio();
       if (sampler) sampler.triggerAttackRelease(note, "8n");
     } catch (e) {
-      console.error("Sampler play error:", e);
+      console.error("playNote failed:", e);
     }
   }
 
-  // ===== Layout =====
+  // ===== Layout (black keys stable) =====
   function positionBlackKeys() {
     if (!currentRoot) return;
 
@@ -92,10 +84,8 @@
     if (!whiteRow || !blackLayer) return;
 
     const whites = Array.from(whiteRow.querySelectorAll(".white-key"));
-    if (whites.length < 2) return;
-
     const blacks = Array.from(blackLayer.querySelectorAll(".black-key"));
-    if (blacks.length === 0) return;
+    if (whites.length < 2 || blacks.length === 0) return;
 
     blacks.forEach((k) => {
       const afterWhite = Number(k.dataset.afterWhite);
@@ -122,6 +112,8 @@
     if (!root) return;
 
     currentRoot = root;
+
+    // ✅ 渲染必须先完成：任何音频错误都不能影响这里
     root.innerHTML = "";
     root.classList.add("piano");
 
@@ -135,25 +127,24 @@
     root.appendChild(blackLayer);
 
     function handlePress(note) {
-      // 先触发声音（需要用户手势解锁）
-      playNote(note);
-      // 再发出事件给 student.js 判题
+      // 先触发事件给判题
       document.dispatchEvent(new CustomEvent("notePlayed", { detail: note }));
+      // 再尝试发声（失败不影响）
+      playNote(note);
     }
 
-    // whites
+    // Whites
     WHITE_NOTES.forEach((note) => {
       const k = document.createElement("button");
       k.type = "button";
       k.className = "white-key";
       k.dataset.note = note;
       k.title = note;
-
       k.addEventListener("click", () => handlePress(note));
       whiteRow.appendChild(k);
     });
 
-    // blacks
+    // Blacks
     BLACK_KEYS.forEach(({ note, afterWhite }) => {
       const k = document.createElement("button");
       k.type = "button";
@@ -161,12 +152,10 @@
       k.dataset.note = note;
       k.dataset.afterWhite = String(afterWhite);
       k.title = note;
-
       k.addEventListener("click", (ev) => {
         ev.stopPropagation();
         handlePress(note);
       });
-
       blackLayer.appendChild(k);
     });
 
