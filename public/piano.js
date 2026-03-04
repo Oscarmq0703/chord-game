@@ -1,5 +1,5 @@
 // public/piano.js — 2-octave real keyboard + Tone.js sampled piano
-// HARDENED: works even if CSS is missing/changed (sets critical styles inline)
+// HARDENED: keyboard always visible even if CSS changes (critical styles inline)
 
 (function () {
   const WHITE_NOTES = [
@@ -69,7 +69,7 @@
     }
   }
 
-  // ===== Layout: position blacks using offset (no drift) =====
+  // ===== Layout: position blacks using offset (stable) =====
   function positionBlackKeys() {
     if (!currentRoot) return;
 
@@ -101,16 +101,16 @@
     });
   }
 
-  // ===== Hard inline styles so keyboard always visible =====
+  // ===== Inline styles (CSS-independent) =====
   function applyRootStyle(root) {
     root.style.position = "relative";
     root.style.width = "100%";
-    root.style.height = "190px";          // 扁一些
+    root.style.height = "190px";                 // 扁一些
     root.style.borderRadius = "16px";
     root.style.border = "1px solid rgba(255,255,255,.12)";
     root.style.background = "rgba(0,0,0,.22)";
     root.style.overflow = "visible";
-    root.style.transform = "none";        // 防止缩放导致定位漂移
+    root.style.transform = "none";               // 防漂移
   }
 
   function applyWhiteRowStyle(row) {
@@ -128,7 +128,7 @@
     layer.style.top = "0";
     layer.style.width = "100%";
     layer.style.height = "112px";
-    layer.style.pointerEvents = "none"; // 黑键自身再开启
+    layer.style.pointerEvents = "none";
   }
 
   function applyWhiteKeyStyle(btn) {
@@ -171,7 +171,6 @@
     }
     currentRoot = root;
 
-    // Clear and apply root style first (so it has height)
     root.innerHTML = "";
     applyRootStyle(root);
 
@@ -189,11 +188,10 @@
     function handlePress(note) {
       // 先判题事件
       document.dispatchEvent(new CustomEvent("notePlayed", { detail: note }));
-      // 再尝试播放真钢琴
+      // 再尝试播放（失败不影响）
       playNote(note);
     }
 
-    // whites
     WHITE_NOTES.forEach((note) => {
       const k = document.createElement("button");
       k.type = "button";
@@ -205,7 +203,6 @@
       whiteRow.appendChild(k);
     });
 
-    // blacks
     BLACK_KEYS.forEach(({ note, afterWhite }) => {
       const k = document.createElement("button");
       k.type = "button";
