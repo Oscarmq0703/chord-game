@@ -662,3 +662,68 @@ a{ color: inherit; text-decoration:none; }
   .piano-black-layer{ height: 105px; }
   .black-key{ height: 105px; width: 28px; }
 }
+
+/* ===== Student: 2-row top block ===== */
+.topBlock{
+  padding: 8px 10px !important;
+  display:flex;
+  flex-direction:column;
+  gap: 6px;
+}
+
+.topRow1, .topRow2{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  flex-wrap:wrap;
+}
+
+.topRow1{ justify-content:space-between; }
+.r1Left{ display:flex; align-items:center; gap:8px; }
+.r1Mid{ display:flex; align-items:center; gap:8px; flex: 1 1 auto; justify-content:center; }
+.r1Right{ display:flex; align-items:center; justify-content:flex-end; }
+
+.topRow2{ justify-content:space-between; }
+.r2Left{ display:flex; align-items:center; gap:8px; }
+.r2Mid{ display:flex; align-items:center; gap:8px; }
+.r2Right{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex: 1 1 auto;
+  justify-content:flex-end;
+  min-width: 260px;
+}
+
+/* AI 文本：默认一行省略，横屏也不会撑高 */
+.aiText2{
+  color: var(--text);
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 520px;
+}
+
+/* 横屏更紧凑 */
+@media (orientation: landscape){
+  .topBlock{ padding: 6px 8px !important; gap: 4px; }
+  .inputSm{ height: 34px; min-width: 170px; }
+  .qNote{ font-size: 34px; }
+  .aiText2{ max-width: 640px; }
+}
+
+/* 竖屏：AI 可以换行显示完整 */
+@media (orientation: portrait){
+  .r1Mid{ justify-content:flex-start; }
+  .r2Right{
+    width:100%;
+    justify-content:flex-start;
+  }
+  .aiText2{
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    max-width: none;
+  }
+}
