@@ -1,5 +1,5 @@
 // public/piano.js — Real 2-octave layout (C4–B5)
-// Fix: position black keys using actual white key DOM positions (no drift on landscape)
+// Fix: use offsetLeft/offsetWidth (layout coords) to position black keys (no drift with transforms)
 
 (function () {
   const WHITE_NOTES = [
@@ -35,20 +35,18 @@
     const whites = Array.from(whiteRow.querySelectorAll(".white-key"));
     if (whites.length < 2) return;
 
-    const rootRect = currentRoot.getBoundingClientRect();
+    const blacks = Array.from(blackLayer.querySelectorAll(".black-key"));
+    if (blacks.length === 0) return;
 
-    blackLayer.querySelectorAll(".black-key").forEach((k) => {
+    // 关键：offsetWidth/offsetLeft 是布局坐标，不受 transform 影响
+    blacks.forEach((k) => {
       const afterWhite = Number(k.dataset.afterWhite);
-      const leftWhite = whites[afterWhite];
-      const rightWhite = whites[afterWhite + 1];
-      if (!leftWhite || !rightWhite) return;
+      const L = whites[afterWhite];
+      const R = whites[afterWhite + 1];
+      if (!L || !R) return;
 
-      const lw = leftWhite.getBoundingClientRect();
-      const rw = rightWhite.getBoundingClientRect();
-      const kw = k.getBoundingClientRect();
-
-      const center = (lw.right + rw.left) / 2;      // 两白键之间的中点（屏幕坐标）
-      const left = center - rootRect.left - kw.width / 2; // 转为相对 piano 的坐标
+      const center = (L.offsetLeft + L.offsetWidth + R.offsetLeft) / 2;
+      const left = center - k.offsetWidth / 2;
 
       k.style.left = `${left}px`;
     });
@@ -58,7 +56,7 @@
     cancelAnimationFrame(raf);
     raf = requestAnimationFrame(() => {
       positionBlackKeys();
-      // 某些手机横屏地址栏收起会二次变化，再补一次
+      // 某些手机横屏地址栏变化会二次布局，再补一次
       setTimeout(positionBlackKeys, 120);
     });
   }
@@ -80,22 +78,18 @@
     root.appendChild(whiteRow);
     root.appendChild(blackLayer);
 
-    // whites
     WHITE_NOTES.forEach((note) => {
       const k = document.createElement("button");
       k.type = "button";
       k.className = "white-key";
       k.dataset.note = note;
       k.title = note;
-
       k.addEventListener("click", () => {
         document.dispatchEvent(new CustomEvent("notePlayed", { detail: note }));
       });
-
       whiteRow.appendChild(k);
     });
 
-    // blacks
     BLACK_KEYS.forEach(({ note, afterWhite }) => {
       const k = document.createElement("button");
       k.type = "button";
@@ -103,18 +97,15 @@
       k.dataset.note = note;
       k.dataset.afterWhite = String(afterWhite);
       k.title = note;
-
       k.addEventListener("click", (ev) => {
         ev.stopPropagation();
         document.dispatchEvent(new CustomEvent("notePlayed", { detail: note }));
       });
-
       blackLayer.appendChild(k);
     });
 
     schedulePosition();
 
-    // 监听各种会改变布局的事件
     window.addEventListener("resize", schedulePosition);
     window.addEventListener("orientationchange", schedulePosition);
     if (window.visualViewport) {
