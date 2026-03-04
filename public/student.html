@@ -10,9 +10,18 @@
     html, body { height: 100%; margin: 0; }
     .studentShell { min-height: 100vh; display:flex; justify-content:center; padding:10px; }
     .studentContainer { width: min(1040px, 100%); height: calc(100vh - 20px); display:flex; flex-direction:column; gap:6px; }
-    .studentStage { flex: 1 1 auto; min-height: 0; display:flex; }
+    .studentStage{
+  flex: 1 1 auto;
+  min-height: 0;
+  display:flex;
+  align-items:flex-start;   /* ✅ 键盘贴上方，不拉满 */
+}
     .studentPianoWrap { flex: 1 1 auto; min-height: 0; display:flex; }
-    #piano { width: 100%; height: 100%; min-height: 180px; border-radius:16px; }
+    #piano{
+  width: 100%;
+  height: clamp(190px, 42vh, 320px);  /* ✅ 关键：限制键盘高度 */
+  border-radius: 16px;
+}
     #debugBar { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size: 12px; }
   </style>
 
