@@ -112,21 +112,38 @@
       ];
 
       function positionBlacks(mount) {
-        const whiteRow = mount.querySelector(".piano-white-row");
-        const blackLayer = mount.querySelector(".piano-black-layer");
-        if (!whiteRow || !blackLayer) return;
-        const whites = Array.from(whiteRow.querySelectorAll(".white-key"));
-        const blacks = Array.from(blackLayer.querySelectorAll(".black-key"));
-        if (whites.length < 2 || blacks.length === 0) return;
+  const whiteRow = mount.querySelector(".piano-white-row");
+  const blackLayer = mount.querySelector(".piano-black-layer");
+  if (!whiteRow || !blackLayer) return;
 
-        blacks.forEach((k) => {
-          const after = Number(k.dataset.afterWhite);
-          const L = whites[after], R = whites[after + 1];
-          if (!L || !R) return;
-          const center = (L.offsetLeft + L.offsetWidth + R.offsetLeft) / 2;
-          k.style.left = (center - k.offsetWidth / 2) + "px";
-        });
-      }
+  const whites = Array.from(whiteRow.querySelectorAll(".white-key"));
+  const blacks = Array.from(blackLayer.querySelectorAll(".black-key"));
+  if (whites.length < 2 || blacks.length === 0) return;
+
+  // ✅ 动态尺寸：黑键跟随白键宽度 & 键盘高度
+  const whiteW = whites[0].offsetWidth;
+  const pianoH = mount.clientHeight;
+
+  // 黑键宽高比例（可微调）
+  const blackW = Math.max(18, Math.min(whiteW * 0.62, 44));  // 不要太窄/太宽
+  const blackH = Math.max(90, Math.min(pianoH * 0.62, pianoH - 20));
+
+  // 应用到所有黑键
+  blacks.forEach((k) => {
+    k.style.width = blackW + "px";
+    k.style.height = blackH + "px";
+  });
+
+  // ✅ 用最新宽度重新定位
+  blacks.forEach((k) => {
+    const after = Number(k.dataset.afterWhite);
+    const L = whites[after], R = whites[after + 1];
+    if (!L || !R) return;
+
+    const center = (L.offsetLeft + L.offsetWidth + R.offsetLeft) / 2;
+    k.style.left = (center - blackW / 2) + "px";
+  });
+}
 
       function buildPianoOnce() {
         try {
@@ -197,9 +214,6 @@
             k.style.pointerEvents = "auto";
             k.style.position = "absolute";
             k.style.top = "0";
-            k.style.width = "30px";
-            k.style.height = "100%";
-            k.style.maxHeight = "120px";
             k.style.border = "1px solid rgba(255,255,255,.10)";
             k.style.background = "linear-gradient(180deg,#1a1a1a,#000)";
             k.style.borderBottomLeftRadius = "8px";
