@@ -5,16 +5,32 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <title>学生答题 - 和弦课堂神器</title>
   <link rel="stylesheet" href="styles.css" />
+
+  <!-- ✅ 关键兜底：不管外部 CSS 怎么改，键盘区都有高度 -->
+  <style>
+    /* 防止外层高度计算异常导致键盘被压成 0 */
+    html, body { height: 100%; margin: 0; }
+    .studentShell { min-height: 100vh; display:flex; justify-content:center; padding:10px; }
+    .studentContainer { width: min(1040px, 100%); height: calc(100vh - 20px); display:flex; flex-direction:column; gap:6px; }
+    .studentStage { flex: 1 1 auto; min-height: 0; display:flex; }
+    .studentPianoWrap { flex: 1 1 auto; min-height: 0; display:flex; }
+    #piano { width: 100%; height: 100%; min-height: 170px; } /* ✅ 最小高度兜底 */
+
+    /* 横屏让键盘更大 */
+    @media (orientation: landscape){
+      .studentContainer { height: calc(100vh - 20px); }
+      #piano { min-height: 180px; }
+    }
+  </style>
 </head>
 
 <body>
   <div class="studentShell">
-    <div class="studentContainer studentNoScroll">
+    <div class="studentContainer">
 
-      <!-- 顶栏两行（你当前确认布局OK的版本） -->
+      <!-- 顶栏两行（你已确认布局OK） -->
       <div class="card topBlock">
 
-        <!-- 第一行：学生答题 + 姓名 + 已连接课堂 -->
         <div class="topRow1">
           <div class="r1Left">
             <div class="logoSm">🎓</div>
@@ -35,7 +51,6 @@
           </div>
         </div>
 
-        <!-- 第二行：题目 + 进度 + AI反馈 -->
         <div class="topRow2">
           <div class="r2Left">
             <span class="muted">请弹奏</span>
@@ -51,49 +66,197 @@
             <span id="aiHint" class="aiText2">每 10 题更新一次反馈。</span>
           </div>
 
-          <!-- 给 student.js 更新用 -->
           <span id="correctNum" style="display:none">0</span>
           <span id="totalNum" style="display:none">0</span>
         </div>
 
       </div>
 
-      <!-- 键盘占满剩余高度 -->
+      <!-- ✅ 键盘容器 -->
       <div class="studentStage">
         <div class="studentPianoWrap">
           <div id="piano"></div>
         </div>
       </div>
 
+      <!-- ✅ 调试提示（上线后可删） -->
+      <div id="debugBar" class="p" style="text-align:center; color: var(--muted);">
+        piano loading...
+      </div>
+
     </div>
   </div>
 
-  <!-- ✅ 最稳：Tone.js 放在 piano.js 前面（同在 body 底部） -->
+  <!-- ✅ Tone.js：真钢琴采样（可用） -->
   <script src="https://unpkg.com/tone@14.7.77/build/Tone.js"></script>
-  <script src="piano.js"></script>
-  <script src="student.js"></script>
 
+  <!-- ✅ 内嵌键盘：不依赖 piano.js，保证一定渲染 -->
   <script>
-    function renderPianoSafe() {
-      try {
-        const el = document.getElementById("piano");
-        if (!el) {
-          console.error("❌ #piano not found");
-          return;
-        }
-        if (typeof window.buildPiano !== "function") {
-          console.error("❌ buildPiano not found (piano.js may not be loaded)");
-          return;
-        }
-        window.buildPiano("piano");
-      } catch (e) {
-        console.error("❌ buildPiano crashed:", e);
-      }
-    }
+    (function () {
+      const WHITE_NOTES = ["C4","D4","E4","F4","G4","A4","B4","C5","D5","E5","F5","G5","A5","B5"];
+      const BLACK_KEYS = [
+        { note: "C#4", afterWhite: 0 }, { note: "D#4", afterWhite: 1 },
+        { note: "F#4", afterWhite: 3 }, { note: "G#4", afterWhite: 4 }, { note: "A#4", afterWhite: 5 },
+        { note: "C#5", afterWhite: 7 }, { note: "D#5", afterWhite: 8 },
+        { note: "F#5", afterWhite: 10 }, { note: "G#5", afterWhite: 11 }, { note: "A#5", afterWhite: 12 },
+      ];
 
-    // 双保险：移动端有时 load 后布局才稳定
-    window.addEventListener("DOMContentLoaded", renderPianoSafe);
-    window.addEventListener("load", () => setTimeout(renderPianoSafe, 60));
+      let sampler = null;
+      let audioReady = false;
+      let audioInitPromise = null;
+
+      async function initAudio() {
+        if (!window.Tone) return;
+        if (audioReady) return;
+        if (audioInitPromise) return audioInitPromise;
+
+        audioInitPromise = (async () => {
+          try {
+            await Tone.start();
+            sampler = new Tone.Sampler({
+              urls: { A4: "A4.mp3", C4: "C4.mp3", D#4: "Ds4.mp3", F#4: "Fs4.mp3" },
+              baseUrl: "https://tonejs.github.io/audio/salamander/",
+              release: 1,
+            }).toDestination();
+            await Tone.loaded();
+            audioReady = true;
+          } catch (e) {
+            console.log("audio init failed", e);
+          }
+        })();
+
+        return audioInitPromise;
+      }
+
+      async function play(note){
+        try{
+          if (!window.Tone) return;
+          if (!audioReady) await initAudio();
+          if (sampler) sampler.triggerAttackRelease(note, "8n");
+        }catch(e){}
+      }
+
+      function positionBlacks(root) {
+        const whiteRow = root.querySelector(".piano-white-row");
+        const blackLayer = root.querySelector(".piano-black-layer");
+        if (!whiteRow || !blackLayer) return;
+
+        const whites = Array.from(whiteRow.querySelectorAll(".white-key"));
+        const blacks = Array.from(blackLayer.querySelectorAll(".black-key"));
+        if (whites.length < 2 || blacks.length === 0) return;
+
+        blacks.forEach((k) => {
+          const after = Number(k.dataset.afterWhite);
+          const L = whites[after], R = whites[after + 1];
+          if (!L || !R) return;
+          const center = (L.offsetLeft + L.offsetWidth + R.offsetLeft) / 2;
+          k.style.left = (center - k.offsetWidth / 2) + "px";
+        });
+      }
+
+      function buildPiano() {
+        const mount = document.getElementById("piano");
+        const dbg = document.getElementById("debugBar");
+        if (!mount) return;
+
+        // root
+        mount.innerHTML = "";
+        mount.style.position = "relative";
+        mount.style.borderRadius = "16px";
+        mount.style.border = "1px solid rgba(255,255,255,.12)";
+        mount.style.background = "rgba(0,0,0,.22)";
+        mount.style.overflow = "visible";
+        mount.style.transform = "none";
+        mount.style.height = "100%";
+
+        // white row
+        const whiteRow = document.createElement("div");
+        whiteRow.className = "piano-white-row";
+        whiteRow.style.position = "absolute";
+        whiteRow.style.inset = "0";
+        whiteRow.style.display = "flex";
+        mount.appendChild(whiteRow);
+
+        // black layer
+        const blackLayer = document.createElement("div");
+        blackLayer.className = "piano-black-layer";
+        blackLayer.style.position = "absolute";
+        blackLayer.style.left = "0";
+        blackLayer.style.top = "0";
+        blackLayer.style.width = "100%";
+        blackLayer.style.height = "60%";
+        blackLayer.style.pointerEvents = "none";
+        mount.appendChild(blackLayer);
+
+        function emit(note){
+          document.dispatchEvent(new CustomEvent("notePlayed", { detail: note }));
+          play(note);
+        }
+
+        WHITE_NOTES.forEach((note) => {
+          const k = document.createElement("button");
+          k.className = "white-key";
+          k.type = "button";
+          k.style.flex = "1 1 auto";
+          k.style.minWidth = "46px";
+          k.style.height = "100%";
+          k.style.border = "1px solid rgba(0,0,0,.18)";
+          k.style.borderTop = "none";
+          k.style.background = "linear-gradient(180deg,#ffffff,#e9eefc)";
+          k.style.borderBottomLeftRadius = "10px";
+          k.style.borderBottomRightRadius = "10px";
+          k.style.padding = "0";
+          k.style.cursor = "pointer";
+          k.style.touchAction = "manipulation";
+          k.addEventListener("click", () => emit(note));
+          whiteRow.appendChild(k);
+        });
+
+        BLACK_KEYS.forEach(({note, afterWhite}) => {
+          const k = document.createElement("button");
+          k.className = "black-key";
+          k.type = "button";
+          k.dataset.afterWhite = String(afterWhite);
+          k.style.pointerEvents = "auto";
+          k.style.position = "absolute";
+          k.style.top = "0";
+          k.style.width = "30px";
+          k.style.height = "100%";
+          k.style.maxHeight = "120px";
+          k.style.border = "1px solid rgba(255,255,255,.10)";
+          k.style.background = "linear-gradient(180deg,#1a1a1a,#000)";
+          k.style.borderBottomLeftRadius = "8px";
+          k.style.borderBottomRightRadius = "8px";
+          k.style.boxShadow = "0 10px 20px rgba(0,0,0,.45)";
+          k.style.cursor = "pointer";
+          k.style.padding = "0";
+          k.style.touchAction = "manipulation";
+          k.addEventListener("click", (ev) => { ev.stopPropagation(); emit(note); });
+          blackLayer.appendChild(k);
+        });
+
+        // position blacks after layout
+        requestAnimationFrame(() => {
+          positionBlacks(mount);
+          setTimeout(() => positionBlacks(mount), 120);
+        });
+
+        window.addEventListener("resize", () => positionBlacks(mount));
+        window.addEventListener("orientationchange", () => setTimeout(() => positionBlacks(mount), 80));
+        if (window.visualViewport) {
+          window.visualViewport.addEventListener("resize", () => positionBlacks(mount));
+          window.visualViewport.addEventListener("scroll", () => positionBlacks(mount));
+        }
+
+        if (dbg) dbg.textContent = "piano rendered ✅（点任意键解锁音频）";
+      }
+
+      window.addEventListener("DOMContentLoaded", buildPiano);
+      window.addEventListener("load", () => setTimeout(buildPiano, 60));
+    })();
   </script>
+
+  <!-- ✅ 你的判题/统计逻辑仍然用原 student.js（不影响） -->
+  <script src="student.js"></script>
 </body>
 </html>
