@@ -6,22 +6,35 @@
   <title>学生答题 - 和弦课堂神器</title>
   <link rel="stylesheet" href="styles.css" />
 
-  <!-- ✅ 兜底：保证键盘容器有高度（不被 flex 压成 0） -->
   <style>
     html, body { height: 100%; margin: 0; }
     .studentShell { min-height: 100vh; display:flex; justify-content:center; padding:10px; }
     .studentContainer { width: min(1040px, 100%); height: calc(100vh - 20px); display:flex; flex-direction:column; gap:6px; }
     .studentStage { flex: 1 1 auto; min-height: 0; display:flex; }
     .studentPianoWrap { flex: 1 1 auto; min-height: 0; display:flex; }
-    #piano { width: 100%; height: 100%; min-height: 180px; } /* ✅ 关键兜底 */
+    #piano { width: 100%; height: 100%; min-height: 180px; border-radius:16px; }
+    #debugBar { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size: 12px; }
   </style>
+
+  <!-- ✅ 最早的脚本：确保“脚本确实在执行” -->
+  <script>
+    window.__DBG__ = function (msg) {
+      const el = document.getElementById("debugBar");
+      if (el) el.textContent = msg;
+      console.log("[DBG]", msg);
+    };
+    window.addEventListener("error", (e) => {
+      const m = (e && (e.message || e.error && e.error.message)) ? (e.message || e.error.message) : String(e);
+      window.__DBG__("debug: ❌ window.onerror: " + m);
+    });
+  </script>
 </head>
 
 <body>
   <div class="studentShell">
     <div class="studentContainer">
 
-      <!-- 顶栏两行（保留你现在稳定布局） -->
+      <!-- 顶栏两行（保持你当前布局） -->
       <div class="card topBlock">
         <div class="topRow1">
           <div class="r1Left">
@@ -70,18 +83,15 @@
         </div>
       </div>
 
-      <!-- ✅ 调试状态：上线后可删 -->
-      <div id="debugBar" class="p" style="text-align:center; color: var(--muted);">
+      <!-- ✅ 调试栏 -->
+      <div id="debugBar" class="p" style="text-align:center; color: #9aa3b2;">
         debug: waiting render...
       </div>
 
     </div>
   </div>
 
-  <!-- Tone.js 放在底部，保证加载顺序 -->
-  <script src="https://unpkg.com/tone@14.7.77/build/Tone.js"></script>
-
-  <!-- ✅ 内嵌渲染键盘：不依赖 piano.js / 不依赖 styles.css -->
+  <!-- ✅ 先渲染键盘（不依赖 Tone.js，确保“键盘必出现”） -->
   <script>
     (function () {
       const WHITE_NOTES = ["C4","D4","E4","F4","G4","A4","B4","C5","D5","E5","F5","G5","A5","B5"];
@@ -92,42 +102,10 @@
         { note: "F#5", afterWhite: 10 }, { note: "G#5", afterWhite: 11 }, { note: "A#5", afterWhite: 12 },
       ];
 
-      let sampler = null, audioReady = false, audioInitPromise = null;
-
-      async function initAudio() {
-        if (!window.Tone) return;
-        if (audioReady) return;
-        if (audioInitPromise) return audioInitPromise;
-        audioInitPromise = (async () => {
-          try {
-            await Tone.start();
-            sampler = new Tone.Sampler({
-              urls: { A4: "A4.mp3", C4: "C4.mp3", D#4: "Ds4.mp3", F#4: "Fs4.mp3" },
-              baseUrl: "https://tonejs.github.io/audio/salamander/",
-              release: 1,
-            }).toDestination();
-            await Tone.loaded();
-            audioReady = true;
-          } catch (e) {
-            console.log("audio init failed", e);
-          }
-        })();
-        return audioInitPromise;
-      }
-
-      async function play(note){
-        try{
-          if (!window.Tone) return;
-          if (!audioReady) await initAudio();
-          if (sampler) sampler.triggerAttackRelease(note, "8n");
-        }catch(e){}
-      }
-
-      function positionBlacks(root) {
-        const whiteRow = root.querySelector(".piano-white-row");
-        const blackLayer = root.querySelector(".piano-black-layer");
+      function positionBlacks(mount) {
+        const whiteRow = mount.querySelector(".piano-white-row");
+        const blackLayer = mount.querySelector(".piano-black-layer");
         if (!whiteRow || !blackLayer) return;
-
         const whites = Array.from(whiteRow.querySelectorAll(".white-key"));
         const blacks = Array.from(blackLayer.querySelectorAll(".black-key"));
         if (whites.length < 2 || blacks.length === 0) return;
@@ -141,107 +119,111 @@
         });
       }
 
-      function buildPiano() {
-        const mount = document.getElementById("piano");
-        const dbg = document.getElementById("debugBar");
-        if (!mount) {
-          if (dbg) dbg.textContent = "debug: ❌ #piano not found";
-          return;
+      function buildPianoOnce() {
+        try {
+          window.__DBG__("debug: script started → building piano...");
+
+          const mount = document.getElementById("piano");
+          if (!mount) {
+            window.__DBG__("debug: ❌ #piano not found");
+            return;
+          }
+
+          // 给容器一个可见背景，便于确认区域存在
+          mount.style.background = "rgba(0,0,0,.22)";
+          mount.style.border = "1px solid rgba(255,255,255,.12)";
+          mount.style.borderRadius = "16px";
+          mount.style.position = "relative";
+          mount.style.overflow = "visible";
+          mount.style.transform = "none";
+
+          mount.innerHTML = "";
+
+          const whiteRow = document.createElement("div");
+          whiteRow.className = "piano-white-row";
+          whiteRow.style.position = "absolute";
+          whiteRow.style.inset = "0";
+          whiteRow.style.display = "flex";
+          mount.appendChild(whiteRow);
+
+          const blackLayer = document.createElement("div");
+          blackLayer.className = "piano-black-layer";
+          blackLayer.style.position = "absolute";
+          blackLayer.style.left = "0";
+          blackLayer.style.top = "0";
+          blackLayer.style.width = "100%";
+          blackLayer.style.height = "60%";
+          blackLayer.style.pointerEvents = "none";
+          mount.appendChild(blackLayer);
+
+          function emit(note){
+            document.dispatchEvent(new CustomEvent("notePlayed", { detail: note }));
+            // 声音稍后再接
+          }
+
+          WHITE_NOTES.forEach((note) => {
+            const k = document.createElement("button");
+            k.type = "button";
+            k.className = "white-key";
+            k.style.flex = "1 1 auto";
+            k.style.minWidth = "46px";
+            k.style.height = "100%";
+            k.style.border = "1px solid rgba(0,0,0,.18)";
+            k.style.borderTop = "none";
+            k.style.background = "linear-gradient(180deg,#ffffff,#e9eefc)";
+            k.style.borderBottomLeftRadius = "10px";
+            k.style.borderBottomRightRadius = "10px";
+            k.style.padding = "0";
+            k.style.cursor = "pointer";
+            k.style.touchAction = "manipulation";
+            k.addEventListener("click", () => emit(note));
+            whiteRow.appendChild(k);
+          });
+
+          BLACK_KEYS.forEach(({note, afterWhite}) => {
+            const k = document.createElement("button");
+            k.type = "button";
+            k.className = "black-key";
+            k.dataset.afterWhite = String(afterWhite);
+            k.style.pointerEvents = "auto";
+            k.style.position = "absolute";
+            k.style.top = "0";
+            k.style.width = "30px";
+            k.style.height = "100%";
+            k.style.maxHeight = "120px";
+            k.style.border = "1px solid rgba(255,255,255,.10)";
+            k.style.background = "linear-gradient(180deg,#1a1a1a,#000)";
+            k.style.borderBottomLeftRadius = "8px";
+            k.style.borderBottomRightRadius = "8px";
+            k.style.boxShadow = "0 10px 20px rgba(0,0,0,.45)";
+            k.style.cursor = "pointer";
+            k.style.padding = "0";
+            k.style.touchAction = "manipulation";
+            k.addEventListener("click", (ev) => { ev.stopPropagation(); emit(note); });
+            blackLayer.appendChild(k);
+          });
+
+          requestAnimationFrame(() => {
+            positionBlacks(mount);
+            setTimeout(() => positionBlacks(mount), 120);
+          });
+
+          window.__DBG__("debug: ✅ piano rendered (no-audio mode)");
+        } catch (e) {
+          window.__DBG__("debug: ❌ build error: " + (e && e.message ? e.message : String(e)));
         }
-
-        mount.innerHTML = "";
-        mount.style.position = "relative";
-        mount.style.borderRadius = "16px";
-        mount.style.border = "1px solid rgba(255,255,255,.12)";
-        mount.style.background = "rgba(0,0,0,.22)";
-        mount.style.transform = "none";
-        mount.style.overflow = "visible";
-
-        const whiteRow = document.createElement("div");
-        whiteRow.className = "piano-white-row";
-        whiteRow.style.position = "absolute";
-        whiteRow.style.inset = "0";
-        whiteRow.style.display = "flex";
-        mount.appendChild(whiteRow);
-
-        const blackLayer = document.createElement("div");
-        blackLayer.className = "piano-black-layer";
-        blackLayer.style.position = "absolute";
-        blackLayer.style.left = "0";
-        blackLayer.style.top = "0";
-        blackLayer.style.width = "100%";
-        blackLayer.style.height = "60%";
-        blackLayer.style.pointerEvents = "none";
-        mount.appendChild(blackLayer);
-
-        function emit(note){
-          document.dispatchEvent(new CustomEvent("notePlayed", { detail: note }));
-          play(note);
-        }
-
-        WHITE_NOTES.forEach((note) => {
-          const k = document.createElement("button");
-          k.type = "button";
-          k.className = "white-key";
-          k.style.flex = "1 1 auto";
-          k.style.minWidth = "46px";
-          k.style.height = "100%";
-          k.style.border = "1px solid rgba(0,0,0,.18)";
-          k.style.borderTop = "none";
-          k.style.background = "linear-gradient(180deg,#ffffff,#e9eefc)";
-          k.style.borderBottomLeftRadius = "10px";
-          k.style.borderBottomRightRadius = "10px";
-          k.style.padding = "0";
-          k.style.cursor = "pointer";
-          k.style.touchAction = "manipulation";
-          k.addEventListener("click", () => emit(note));
-          whiteRow.appendChild(k);
-        });
-
-        BLACK_KEYS.forEach(({note, afterWhite}) => {
-          const k = document.createElement("button");
-          k.type = "button";
-          k.className = "black-key";
-          k.dataset.afterWhite = String(afterWhite);
-          k.style.pointerEvents = "auto";
-          k.style.position = "absolute";
-          k.style.top = "0";
-          k.style.width = "30px";
-          k.style.height = "100%";
-          k.style.maxHeight = "120px";
-          k.style.border = "1px solid rgba(255,255,255,.10)";
-          k.style.background = "linear-gradient(180deg,#1a1a1a,#000)";
-          k.style.borderBottomLeftRadius = "8px";
-          k.style.borderBottomRightRadius = "8px";
-          k.style.boxShadow = "0 10px 20px rgba(0,0,0,.45)";
-          k.style.cursor = "pointer";
-          k.style.padding = "0";
-          k.style.touchAction = "manipulation";
-          k.addEventListener("click", (ev) => { ev.stopPropagation(); emit(note); });
-          blackLayer.appendChild(k);
-        });
-
-        requestAnimationFrame(() => {
-          positionBlacks(mount);
-          setTimeout(() => positionBlacks(mount), 120);
-        });
-
-        window.addEventListener("resize", () => positionBlacks(mount));
-        window.addEventListener("orientationchange", () => setTimeout(() => positionBlacks(mount), 80));
-        if (window.visualViewport) {
-          window.visualViewport.addEventListener("resize", () => positionBlacks(mount));
-          window.visualViewport.addEventListener("scroll", () => positionBlacks(mount));
-        }
-
-        if (dbg) dbg.textContent = "debug: ✅ piano rendered（点任意键解锁音频）";
       }
 
-      window.addEventListener("DOMContentLoaded", buildPiano);
-      window.addEventListener("load", () => setTimeout(buildPiano, 60));
+      // ✅ 不等事件：立即渲染 + 500ms + 1500ms
+      buildPianoOnce();
+      setTimeout(buildPianoOnce, 500);
+      setTimeout(buildPianoOnce, 1500);
     })();
   </script>
 
-  <!-- 你原来的统计/判题逻辑 -->
+  <!-- 你的判题/统计逻辑 -->
   <script src="student.js"></script>
+
+  <!-- Tone.js：先不加到渲染流程里，避免它阻塞键盘显示。键盘稳定出现后再接声音。 -->
 </body>
 </html>
