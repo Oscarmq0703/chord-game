@@ -104,6 +104,62 @@
   <script>
     (function () {
       const WHITE_NOTES = ["C4","D4","E4","F4","G4","A4","B4","C5","D5","E5","F5","G5","A5","B5"];
+// ===== Real Piano (Sampled) via Tone.js Salamander =====
+let sampler = null;
+let audioReady = false;
+let audioInitPromise = null;
+
+function hasTone() {
+  return typeof window.Tone !== "undefined";
+}
+
+// 只在第一次“用户点击琴键”时初始化（符合浏览器规则）
+async function ensureAudioReady() {
+  if (!hasTone()) return false;
+  if (audioReady) return true;
+  if (audioInitPromise) return audioInitPromise;
+
+  audioInitPromise = (async () => {
+    try {
+      // 必须在用户手势后调用，放在点击琴键流程里就满足
+      await Tone.start();
+
+      sampler = new Tone.Sampler({
+        urls: {
+          A4: "A4.mp3",
+          C4: "C4.mp3",
+          D#4: "Ds4.mp3",
+          F#4: "Fs4.mp3",
+        },
+        baseUrl: "https://tonejs.github.io/audio/salamander/",
+        release: 1,
+      }).toDestination();
+
+      // ✅ 等待采样加载（最稳）
+      await Tone.loaded();
+      audioReady = true;
+
+      // 你页面底部 debugBar 可提示一下（可选）
+      if (window.__DBG__) window.__DBG__("debug: ✅ piano rendered + audio ready");
+      return true;
+    } catch (e) {
+      console.log("Audio init failed:", e);
+      return false;
+    }
+  })();
+
+  return audioInitPromise;
+}
+
+async function playPiano(note) {
+  try {
+    const ok = await ensureAudioReady();
+    if (!ok || !sampler) return;
+    sampler.triggerAttackRelease(note, "8n");
+  } catch (e) {
+    console.log("play failed:", e);
+  }
+}
       const BLACK_KEYS = [
         { note: "C#4", afterWhite: 0 }, { note: "D#4", afterWhite: 1 },
         { note: "F#4", afterWhite: 3 }, { note: "G#4", afterWhite: 4 }, { note: "A#4", afterWhite: 5 },
@@ -189,10 +245,11 @@
           blackLayer.style.pointerEvents = "none";
           mount.appendChild(blackLayer);
 
-          function emit(note){
-            document.dispatchEvent(new CustomEvent("notePlayed", { detail: note }));
-            // 声音稍后再接
-          }
+function emit(note){
+  document.dispatchEvent(new CustomEvent("notePlayed", { detail: note }));
+  // ✅ 真钢琴采样音色（失败不影响键盘）
+  playPiano(note);
+}
 
           WHITE_NOTES.forEach((note) => {
             const k = document.createElement("button");
@@ -264,7 +321,7 @@ if (window.visualViewport) {
           window.__DBG__("debug: ❌ build error: " + (e && e.message ? e.message : String(e)));
         }
       }
-
+<script src="https://unpkg.com/tone@14.7.77/build/Tone.js"></script>
       // ✅ 不等事件：立即渲染 + 500ms + 1500ms
       buildPianoOnce();
       setTimeout(buildPianoOnce, 500);
