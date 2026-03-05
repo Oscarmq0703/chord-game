@@ -17,7 +17,7 @@
   </style>
 
 <script src="https://unpkg.com/tone@14.7.77/build/Tone.js"></script>
-<script src="audio.js"></script>
+<script src="audio.js?v=1"></script>
 
   <script>
     function DBG(msg){
@@ -160,8 +160,17 @@
         mount.appendChild(blackLayer);
 
         function emit(note){
-          try { document.dispatchEvent(new CustomEvent("notePlayed", { detail: note })); } catch(e) {}
-          if (typeof window.playNote === "function") window.playNote(note);
+  // show whether audio hook exists
+  if (typeof window.playNote === "function") {
+    // try audio first (user gesture)
+    window.playNote(note);
+    DBG("debug: key pressed, calling playNote(" + note + ")");
+  } else {
+    DBG("debug: playNote missing (audio.js not loaded)");
+  }
+
+  // keep your quiz event
+  try { document.dispatchEvent(new CustomEvent("notePlayed", { detail: note })); } catch(e) {}
 }
 
         for (var i=0;i<WHITE.length;i++){
@@ -217,12 +226,11 @@
           window.visualViewport.addEventListener("scroll", function(){ positionBlacks(mount); });
         }
 
-        DBG("debug: piano rendered OK (no audio)");
+        DBG("debug: piano rendered OK (tap a key for audio)");
       }
 
       build();
-      setTimeout(build, 500);
-      setTimeout(build, 1500);
+
     })();
   </script>
 
