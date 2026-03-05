@@ -120,28 +120,35 @@
   const blacks = Array.from(blackLayer.querySelectorAll(".black-key"));
   if (whites.length < 2 || blacks.length === 0) return;
 
-  // ✅ 动态尺寸：黑键跟随白键宽度 & 键盘高度
+  // ✅ 永远以“白键真实尺寸”为准（移动端横屏最稳）
   const whiteW = whites[0].offsetWidth;
-  const pianoH = mount.clientHeight;
+  const whiteH = whites[0].offsetHeight;
 
-  // 黑键宽高比例（可微调）
-  const blackW = Math.max(18, Math.min(whiteW * 0.62, 44));  // 不要太窄/太宽
-  const blackH = Math.max(90, Math.min(pianoH * 0.62, pianoH - 20));
+  // ✅ 黑键比例（更接近真钢琴视觉）
+  const targetBlackW = Math.max(18, Math.min(whiteW * 0.62, 46));
+  const targetBlackH = Math.max(70, Math.min(whiteH * 0.62, whiteH - 14));
 
-  // 应用到所有黑键
+  // 先统一设置尺寸，让浏览器完成重排
   blacks.forEach((k) => {
-    k.style.width = blackW + "px";
-    k.style.height = blackH + "px";
+    k.style.width = targetBlackW + "px";
+    k.style.height = targetBlackH + "px";
   });
 
-  // ✅ 用最新宽度重新定位
-  blacks.forEach((k) => {
-    const after = Number(k.dataset.afterWhite);
-    const L = whites[after], R = whites[after + 1];
-    if (!L || !R) return;
+  // 让黑键层高度也匹配，避免“黑键溢出看起来更长”
+  blackLayer.style.height = targetBlackH + "px";
 
-    const center = (L.offsetLeft + L.offsetWidth + R.offsetLeft) / 2;
-    k.style.left = (center - blackW / 2) + "px";
+  // ✅ 下一帧再计算 left（避免移动端横屏同帧误差导致整体偏左）
+  requestAnimationFrame(() => {
+    blacks.forEach((k) => {
+      const after = Number(k.dataset.afterWhite);
+      const L = whites[after];
+      const R = whites[after + 1];
+      if (!L || !R) return;
+
+      const blackW = k.offsetWidth; // 用最终实际宽度
+      const center = (L.offsetLeft + L.offsetWidth + R.offsetLeft) / 2;
+      k.style.left = (center - blackW / 2) + "px";
+    });
   });
 }
 
@@ -230,6 +237,27 @@
             positionBlacks(mount);
             setTimeout(() => positionBlacks(mount), 120);
           });
+
+// ⭐ 手机横屏 / 浏览器尺寸变化时重新计算黑键位置
+window.addEventListener("resize", () => {
+  positionBlacks(mount);
+});
+
+// ⭐ 手机横屏切换时延迟重新计算（防止布局未稳定）
+window.addEventListener("orientationchange", () => {
+  setTimeout(() => positionBlacks(mount), 250);
+});
+
+// ⭐ iOS / Android 地址栏收起导致 viewport 变化
+if (window.visualViewport) {
+  window.visualViewport.addEventListener("resize", () => {
+    positionBlacks(mount);
+  });
+
+  window.visualViewport.addEventListener("scroll", () => {
+    positionBlacks(mount);
+  });
+}
 
           window.__DBG__("debug: ✅ piano rendered (no-audio mode)");
         } catch (e) {
