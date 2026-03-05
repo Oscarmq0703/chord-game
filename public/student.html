@@ -85,6 +85,8 @@
     </div>
   </div>
 
+<script src="https://unpkg.com/tone@14.7.77/build/Tone.js"></script>
+
   <script>
     (function(){
       var WHITE = ["C4","D4","E4","F4","G4","A4","B4","C5","D5","E5","F5","G5","A5","B5"];
@@ -92,6 +94,51 @@
         {n:"C#4",a:0},{n:"D#4",a:1},{n:"F#4",a:3},{n:"G#4",a:4},{n:"A#4",a:5},
         {n:"C#5",a:7},{n:"D#5",a:8},{n:"F#5",a:10},{n:"G#5",a:11},{n:"A#5",a:12}
       ];
+var sampler = null;
+      var audioReady = false;
+      var audioInitPromise = null;
+
+      function hasTone(){
+        return typeof window.Tone !== "undefined";
+      }
+
+      function ensureAudioReady(){
+        if(!hasTone()) return Promise.resolve(false);
+        if(audioReady) return Promise.resolve(true);
+        if(audioInitPromise) return audioInitPromise;
+
+        audioInitPromise = (async function(){
+          try{
+            // Must be called after user gesture (we call playNote from click)
+            await Tone.start();
+
+            sampler = new Tone.Sampler({
+              urls: { A4: "A4.mp3", C4: "C4.mp3", D#4: "Ds4.mp3", F#4: "Fs4.mp3" },
+              baseUrl: "https://tonejs.github.io/audio/salamander/",
+              release: 1
+            }).toDestination();
+
+            await Tone.loaded();
+            audioReady = true;
+            DBG("debug: piano rendered OK + audio ready");
+            return true;
+          }catch(e){
+            DBG("debug: piano rendered OK (audio init failed)");
+            return false;
+          }
+        })();
+
+        return audioInitPromise;
+      }
+
+      function playNote(note){
+        try{
+          ensureAudioReady().then(function(ok){
+            if(!ok || !sampler) return;
+            sampler.triggerAttackRelease(note, "8n");
+          });
+        }catch(e){}
+      }
 
       function positionBlacks(mount){
         var whiteRow = mount.querySelector(".piano-white-row");
@@ -158,6 +205,8 @@
 
         function emit(note){
           try { document.dispatchEvent(new CustomEvent("notePlayed", { detail: note })); } catch(e) {}
+          // play sampled piano (does not block UI even if fails)
+          playNote(note);
         }
 
         for (var i=0;i<WHITE.length;i++){
