@@ -93,6 +93,7 @@
       </div>
 
       <div id="debugBar">debug: waiting...</div>
+      <div id="audioBar">audio: waiting...</div>
     </div>
   </div>
 
@@ -177,13 +178,17 @@
         mount.appendChild(blackLayer);
 
         function emit(note){
-          // audio (if loaded)
-          if (typeof window.playNote === "function") {
-            window.playNote(note);
-          }
-          // quiz event
-          try { document.dispatchEvent(new CustomEvent("notePlayed", { detail: note })); } catch(e) {}
-        }
+            var ab = document.getElementById("audioBar");
+            if (ab) ab.textContent = "audio: key pressed " + note;
+
+            if (typeof window.playNote === "function") {
+               window.playNote(note);
+            } else {
+              if (ab) ab.textContent = "audio: playNote missing";
+            }
+
+            try { document.dispatchEvent(new CustomEvent("notePlayed", { detail: note })); } catch(e) {}
+}
 
         for (var i=0;i<WHITE.length;i++){
           var note = WHITE[i];
