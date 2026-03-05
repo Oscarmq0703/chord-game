@@ -16,159 +16,29 @@
     #debugBar { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; text-align:center; color:#9aa3b2; }
   </style>
 
-<!-- 1) Tone first -->
-<script src="https://unpkg.com/tone@14.7.77/build/Tone.js"></script>
-
-<!-- 2) audio.js second (cache bust) -->
-<script src="audio.js?v=2"></script>
-
-<!-- 3) verify audio module loaded -->
-<script>
-  DBG("debug: audio module playNote=" + (typeof window.playNote));
-</script>
-
-<!-- 4) then your piano render script -->
-<script>
-  (function(){
-    var WHITE = ["C4","D4","E4","F4","G4","A4","B4","C5","D5","E5","F5","G5","A5","B5"];
-    var BLACK = [
-      {n:"C#4",a:0},{n:"D#4",a:1},{n:"F#4",a:3},{n:"G#4",a:4},{n:"A#4",a:5},
-      {n:"C#5",a:7},{n:"D#5",a:8},{n:"F#5",a:10},{n:"G#5",a:11},{n:"A#5",a:12}
-    ];
-
-    function positionBlacks(mount){
-      var whiteRow = mount.querySelector(".piano-white-row");
-      var blackLayer = mount.querySelector(".piano-black-layer");
-      if(!whiteRow || !blackLayer) return;
-
-      var whites = Array.prototype.slice.call(whiteRow.querySelectorAll(".white-key"));
-      var blacks = Array.prototype.slice.call(blackLayer.querySelectorAll(".black-key"));
-      if(whites.length < 2 || blacks.length === 0) return;
-
-      var wW = whites[0].offsetWidth;
-      var wH = whites[0].offsetHeight;
-
-      var bW = Math.max(18, Math.min(wW * 0.62, 46));
-      var bH = Math.max(70, Math.min(wH * 0.62, wH - 14));
-
-      for (var i=0;i<blacks.length;i++){
-        blacks[i].style.width = bW + "px";
-        blacks[i].style.height = bH + "px";
-      }
-      blackLayer.style.height = bH + "px";
-
-      requestAnimationFrame(function(){
-        for (var j=0;j<blacks.length;j++){
-          var k = blacks[j];
-          var after = Number(k.dataset.afterWhite);
-          var L = whites[after];
-          var R = whites[after+1];
-          if(!L || !R) continue;
-          var center = (L.offsetLeft + L.offsetWidth + R.offsetLeft) / 2;
-          k.style.left = (center - (k.offsetWidth/2)) + "px";
-        }
+  <script>
+    // Robust debug: works even before #debugBar exists
+    (function(){
+      window.__DBG_LAST__ = "debug: waiting...";
+      window.DBG = function(msg){
+        window.__DBG_LAST__ = msg;
+        try{
+          var el = document.getElementById("debugBar");
+          if(el) el.textContent = msg;
+        }catch(e){}
+        try{ console.log("[DBG]", msg); }catch(e){}
+      };
+      window.addEventListener("error", function(e){
+        var m = "";
+        try { m = e && e.message ? e.message : String(e); } catch(_) { m = "error"; }
+        window.DBG("debug: ERROR: " + m);
       });
-    }
-
-    function build(){
-      DBG("debug: building piano...");
-      var mount = document.getElementById("piano");
-      if(!mount){ DBG("debug: #piano missing"); return; }
-
-      mount.innerHTML = "";
-      mount.style.background = "rgba(0,0,0,.22)";
-      mount.style.border = "1px solid rgba(255,255,255,.12)";
-      mount.style.borderRadius = "16px";
-      mount.style.position = "relative";
-      mount.style.overflow = "visible";
-      mount.style.transform = "none";
-
-      var whiteRow = document.createElement("div");
-      whiteRow.className = "piano-white-row";
-      whiteRow.style.position = "absolute";
-      whiteRow.style.inset = "0";
-      whiteRow.style.display = "flex";
-      mount.appendChild(whiteRow);
-
-      var blackLayer = document.createElement("div");
-      blackLayer.className = "piano-black-layer";
-      blackLayer.style.position = "absolute";
-      blackLayer.style.left = "0";
-      blackLayer.style.top = "0";
-      blackLayer.style.width = "100%";
-      blackLayer.style.pointerEvents = "none";
-      mount.appendChild(blackLayer);
-
-      function emit(note){
-        // play audio if available
-        if (typeof window.playNote === "function") {
-          window.playNote(note);
-        }
-        try { document.dispatchEvent(new CustomEvent("notePlayed", { detail: note })); } catch(e) {}
-      }
-
-      for (var i=0;i<WHITE.length;i++){
-        var note = WHITE[i];
-        var k = document.createElement("button");
-        k.type = "button";
-        k.className = "white-key";
-        k.style.flex = "1 1 auto";
-        k.style.minWidth = "46px";
-        k.style.height = "100%";
-        k.style.border = "1px solid rgba(0,0,0,.18)";
-        k.style.borderTop = "none";
-        k.style.background = "linear-gradient(180deg,#ffffff,#e9eefc)";
-        k.style.borderBottomLeftRadius = "10px";
-        k.style.borderBottomRightRadius = "10px";
-        k.style.padding = "0";
-        k.style.cursor = "pointer";
-        k.style.touchAction = "manipulation";
-        (function(n){ k.addEventListener("click", function(){ emit(n); }); })(note);
-        whiteRow.appendChild(k);
-      }
-
-      for (var j=0;j<BLACK.length;j++){
-        var b = BLACK[j];
-        var bk = document.createElement("button");
-        bk.type = "button";
-        bk.className = "black-key";
-        bk.dataset.afterWhite = String(b.a);
-        bk.style.pointerEvents = "auto";
-        bk.style.position = "absolute";
-        bk.style.top = "0";
-        bk.style.border = "1px solid rgba(255,255,255,.10)";
-        bk.style.background = "linear-gradient(180deg,#1a1a1a,#000)";
-        bk.style.borderBottomLeftRadius = "8px";
-        bk.style.borderBottomRightRadius = "8px";
-        bk.style.boxShadow = "0 10px 20px rgba(0,0,0,.45)";
-        bk.style.cursor = "pointer";
-        bk.style.padding = "0";
-        bk.style.touchAction = "manipulation";
-        (function(n){ bk.addEventListener("click", function(ev){ ev.stopPropagation(); emit(n); }); })(b.n);
-        blackLayer.appendChild(bk);
-      }
-
-      requestAnimationFrame(function(){
-        positionBlacks(mount);
-        setTimeout(function(){ positionBlacks(mount); }, 180);
+      document.addEventListener("DOMContentLoaded", function(){
+        // apply last message once debugBar exists
+        window.DBG(window.__DBG_LAST__);
       });
-
-      window.addEventListener("resize", function(){ positionBlacks(mount); });
-      window.addEventListener("orientationchange", function(){ setTimeout(function(){ positionBlacks(mount); }, 260); });
-      if (window.visualViewport){
-        window.visualViewport.addEventListener("resize", function(){ positionBlacks(mount); });
-        window.visualViewport.addEventListener("scroll", function(){ positionBlacks(mount); });
-      }
-
-      DBG("debug: piano rendered OK (tap a key for audio)");
-    }
-
-    build();
-  })();
-</script>
-
-<!-- 5) finally student.js -->
-<script src="student.js"></script>
+    })();
+  </script>
 </head>
 
 <body>
@@ -225,6 +95,15 @@
       <div id="debugBar">debug: waiting...</div>
     </div>
   </div>
+
+  <!-- Audio deps must load BEFORE piano script -->
+  <script src="https://unpkg.com/tone@14.7.77/build/Tone.js"></script>
+  <script src="audio.js?v=3"></script>
+
+  <script>
+    // Verify audio module
+    DBG("debug: audio playNote=" + (typeof window.playNote));
+  </script>
 
   <script>
     (function(){
@@ -298,18 +177,13 @@
         mount.appendChild(blackLayer);
 
         function emit(note){
-  // show whether audio hook exists
-  if (typeof window.playNote === "function") {
-    // try audio first (user gesture)
-    window.playNote(note);
-    DBG("debug: key pressed, calling playNote(" + note + ")");
-  } else {
-    DBG("debug: playNote missing (audio.js not loaded)");
-  }
-
-  // keep your quiz event
-  try { document.dispatchEvent(new CustomEvent("notePlayed", { detail: note })); } catch(e) {}
-}
+          // audio (if loaded)
+          if (typeof window.playNote === "function") {
+            window.playNote(note);
+          }
+          // quiz event
+          try { document.dispatchEvent(new CustomEvent("notePlayed", { detail: note })); } catch(e) {}
+        }
 
         for (var i=0;i<WHITE.length;i++){
           var note = WHITE[i];
@@ -367,8 +241,8 @@
         DBG("debug: piano rendered OK (tap a key for audio)");
       }
 
+      // Run once only (no rebuild loops)
       build();
-
     })();
   </script>
 
