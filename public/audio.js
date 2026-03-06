@@ -1,6 +1,15 @@
-// public/audio.js (ASCII only) - guaranteed native beep
+// public/audio.js (ASCII only)
+// Priority:
+// 1) Tone Sampler (real piano sample)
+// 2) Tone Synth fallback
+// 3) Native beep fallback
+
 (function(){
   var ac = null;
+  var sampler = null;
+  var synth = null;
+  var audioMode = "none";
+  var toneInitPromise = null;
 
   function setAudio(msg){
     try{
@@ -8,6 +17,10 @@
       if(el) el.textContent = msg;
     }catch(e){}
     try{ console.log("[AUDIO]", msg); }catch(e){}
+  }
+
+  function hasTone(){
+    return typeof window.Tone !== "undefined";
   }
 
   function ensureAC(){
@@ -35,9 +48,7 @@
     return 440 * Math.pow(2, (midi - 69) / 12);
   }
 
-  window.playNote = function(note){
-    setAudio("audio: playNote called " + note);
-
+  function nativeBeep(note){
     if(!ensureAC()){
       setAudio("audio: AudioContext not available");
       return;
@@ -64,7 +75,108 @@
     }catch(e){
       setAudio("audio: native beep FAILED");
     }
+  }
+
+  function initToneSynth(){
+    if(!hasTone()) return false;
+    if(synth) return true;
+
+    try{
+      synth = new Tone.Synth({
+        oscillator: { type: "triangle" },
+        envelope: {
+          attack: 0.002,
+          decay: 0.08,
+          sustain: 0.2,
+          release: 0.2
+        }
+      }).toDestination();
+
+      audioMode = "tone-synth";
+      return true;
+    }catch(e){
+      return false;
+    }
+  }
+
+  function ensureToneReady(){
+    if(!hasTone()) return Promise.resolve(false);
+    if(toneInitPromise) return toneInitPromise;
+
+    toneInitPromise = (async function(){
+      try{
+        await Tone.start();
+
+        sampler = new Tone.Sampler({
+          urls: {
+            A4: "A4.mp3",
+            C4: "C4.mp3",
+            D#4: "Ds4.mp3",
+            F#4: "Fs4.mp3"
+          },
+          baseUrl: "https://tonejs.github.io/audio/salamander/",
+          release: 1
+        }).toDestination();
+
+        await Tone.loaded();
+
+        audioMode = "sampled-piano";
+        setAudio("audio: sampled piano ready");
+        return true;
+      }catch(e){
+        // sampler failed, fallback to synth
+        if(initToneSynth()){
+          setAudio("audio: samples blocked, using tone synth");
+          return true;
+        }
+        return false;
+      }
+    })();
+
+    return toneInitPromise;
+  }
+
+  window.playNote = function(note){
+    if(audioMode === "sampled-piano" && sampler){
+      try{
+        sampler.triggerAttackRelease(note, "8n");
+        setAudio("audio: playing sampled piano");
+        return;
+      }catch(e){}
+    }
+
+    if(audioMode === "tone-synth" && synth){
+      try{
+        synth.triggerAttackRelease(note, "8n");
+        setAudio("audio: playing tone synth");
+        return;
+      }catch(e){}
+    }
+
+    ensureToneReady().then(function(ok){
+      if(ok){
+        if(audioMode === "sampled-piano" && sampler){
+          try{
+            sampler.triggerAttackRelease(note, "8n");
+            setAudio("audio: playing sampled piano");
+            return;
+          }catch(e){}
+        }
+
+        if(audioMode === "tone-synth" && synth){
+          try{
+            synth.triggerAttackRelease(note, "8n");
+            setAudio("audio: playing tone synth");
+            return;
+          }catch(e){}
+        }
+      }
+
+      nativeBeep(note);
+    }).catch(function(){
+      nativeBeep(note);
+    });
   };
 
-  setAudio("audio: audio.js loaded OK, playNote=function");
+  setAudio("audio: audio.js loaded, waiting for first key");
 })();
