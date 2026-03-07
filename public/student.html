@@ -13,11 +13,15 @@
     .studentStage { flex: 1 1 auto; min-height: 0; display:flex; align-items:flex-start; }
     .studentPianoWrap { flex: 1 1 auto; min-height: 0; display:flex; }
     #piano { width: 100%; height: clamp(190px, 42vh, 320px); border-radius: 16px; }
-    #debugBar { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; text-align:center; color:#9aa3b2; }
+    #debugBar, #audioBar {
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      font-size: 12px;
+      text-align:center;
+      color:#9aa3b2;
+    }
   </style>
 
   <script>
-    // Robust debug: works even before #debugBar exists
     (function(){
       window.__DBG_LAST__ = "debug: waiting...";
       window.DBG = function(msg){
@@ -34,7 +38,6 @@
         window.DBG("debug: ERROR: " + m);
       });
       document.addEventListener("DOMContentLoaded", function(){
-        // apply last message once debugBar exists
         window.DBG(window.__DBG_LAST__);
       });
     })();
@@ -97,77 +100,11 @@
     </div>
   </div>
 
-  <!-- Audio deps must load BEFORE piano script -->
-  <script src="https://unpkg.com/tone@14.7.77/build/Tone.js"></script>
-<script>
-  var __ac = null;
+  <!-- local Tone -->
+  <script src="vendor/tone.min.js"></script>
+  <script src="audio.js?v=5"></script>
 
-  function setAudio(msg){
-    var el = document.getElementById("audioBar");
-    if (el) el.textContent = msg;
-  }
-
-  function ensureAC(){
-    try{
-      if(!__ac){
-        var Ctx = window.AudioContext || window.webkitAudioContext;
-        if(!Ctx) return false;
-        __ac = new Ctx();
-      }
-      if(__ac.state === "suspended") __ac.resume();
-      return true;
-    }catch(e){
-      return false;
-    }
-  }
-
-  function noteToFreq(note){
-    var m = note.match(/^([A-G])(#?)(\d)$/);
-    if(!m) return 440;
-    var base = { C:0, D:2, E:4, F:5, G:7, A:9, B:11 };
-    var letter = m[1];
-    var sharp = m[2] === "#" ? 1 : 0;
-    var oct = parseInt(m[3], 10);
-    var midi = (oct + 1) * 12 + base[letter] + sharp;
-    return 440 * Math.pow(2, (midi - 69) / 12);
-  }
-
-  function playNote(note){
-    setAudio("audio: playNote called " + note);
-
-    if(!ensureAC()){
-      setAudio("audio: AudioContext not available");
-      return;
-    }
-
-    try{
-      var o = __ac.createOscillator();
-      var g = __ac.createGain();
-
-      o.type = "triangle";
-      o.frequency.value = noteToFreq(note);
-
-      var now = __ac.currentTime;
-      g.gain.setValueAtTime(0.0001, now);
-      g.gain.exponentialRampToValueAtTime(0.18, now + 0.01);
-      g.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
-
-      o.connect(g);
-      g.connect(__ac.destination);
-
-      o.start(now);
-      o.stop(now + 0.20);
-
-      setAudio("audio: native beep OK");
-    }catch(e){
-      setAudio("audio: native beep FAILED");
-    }
-  }
-
-  setAudio("audio: inline audio ready");
-</script>
   <script>
-    // Verify audio module
     DBG("debug: audio playNote=" + (typeof window.playNote));
   </script>
 
@@ -242,16 +179,18 @@
         blackLayer.style.pointerEvents = "none";
         mount.appendChild(blackLayer);
 
-       function emit(note){
-  var ab = document.getElementById("audioBar");
-  if (ab) ab.textContent = "audio: key pressed " + note;
+        function emit(note){
+          var ab = document.getElementById("audioBar");
+          if (ab) ab.textContent = "audio: key pressed " + note;
 
-  playNote(note);
+          if (typeof window.playNote === "function") {
+            window.playNote(note);
+          } else {
+            if (ab) ab.textContent = "audio: playNote missing";
+          }
 
-  try {
-    document.dispatchEvent(new CustomEvent("notePlayed", { detail: note }));
-  } catch(e) {}
-}
+          try { document.dispatchEvent(new CustomEvent("notePlayed", { detail: note })); } catch(e) {}
+        }
 
         for (var i=0;i<WHITE.length;i++){
           var note = WHITE[i];
@@ -309,10 +248,8 @@
         DBG("debug: piano rendered OK (tap a key for audio)");
       }
 
-      // Run once only (no rebuild loops)
       build();
     })();
-
   </script>
 
   <script src="student.js"></script>
